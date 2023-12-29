@@ -12,6 +12,15 @@ let value_less_than_error_code = "value_less_than"
 let value_less_than_or_equal_error_code = "value_less_than_or_equal"
 let value_between_error_code = "value_between"
 
+(* Regex *)
+let invalid_pattern_error_code = "invalid_pattern"
+let invalid_uuid_error_code = "invalid_uuid"
+let invalid_numeric_error_code = "invalid_numeric"
+let invalid_alpha_error_code = "invalid_alpha"
+let invalid_alpha_numeric_error_code = "invalid_alpha_numeric"
+let invalid_lowercase_error_code = "invalid_lowercase"
+let invalid_uppercase_error_code = "invalid_uppercase"
+
 type base_validation_error = { code : string; params : (string * string) list }
 [@@deriving show, eq]
 

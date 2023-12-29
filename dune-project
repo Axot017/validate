@@ -19,7 +19,7 @@
  (name validator)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends (ocaml (= "5.1.0")) dune (alcotest :with-test) ppx_deriving)
+ (depends (ocaml (= "5.1.0")) dune (alcotest :with-test) ppx_deriving re uri)
  (tags
   (topics "to describe" your project)))
 (package

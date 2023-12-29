@@ -14,6 +14,8 @@ depends: [
   "dune" {>= "3.12"}
   "alcotest" {with-test}
   "ppx_deriving"
+  "re"
+  "uri"
   "odoc" {with-doc}
 ]
 build: [

@@ -46,7 +46,7 @@ let iterable_item index (validators : 'a validator list) item :
   | [] -> Ok ()
   | errors -> Error (index, errors)
 
-let iterable (validators : 'a validator list) iterable :
+let list (validators : 'a validator list) iterable :
     (unit, validation_error) result =
   let rec validate iterable errors index =
     match iterable with

@@ -1,7 +1,16 @@
+(* Lengt *)
 let min_length_error_code = "min_length"
 let max_length_error_code = "max_length"
 let length_equals_error_code = "length_equals"
+
+(* Value *)
 let value_equals_error_code = "value_equals"
+let value_not_equals_error_code = "value_not_equals"
+let value_greater_than_error_code = "value_greater_than"
+let value_greater_than_or_equal_error_code = "value_greater_than_or_equal"
+let value_less_than_error_code = "value_less_than"
+let value_less_than_or_equal_error_code = "value_less_than_or_equal"
+let value_between_error_code = "value_between"
 
 type base_validation_error = { code : string; params : (string * string) list }
 [@@deriving show, eq]

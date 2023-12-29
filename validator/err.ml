@@ -1,11 +1,18 @@
 let min_length_error_code = "min_length"
 let max_length_error_code = "max_length"
+let length_equals_error_code = "length_equals"
+let value_equals_error_code = "value_equals"
 
 type base_validation_error = { code : string; params : (string * string) list }
-and field_validation_error = { field : string; field_error : validation_error }
-and list_validation_error = { index : int; list_error : validation_error }
+[@@deriving show, eq]
+
+and field_validation_error = string * validation_error list
+[@@deriving show, eq]
+
+and index_validation_error = int * validation_error list [@@deriving show, eq]
 
 and validation_error =
-  | Base of base_validation_error
-  | Field of field_validation_error list
-  | List of list_validation_error list
+  | BaseError of base_validation_error
+  | RecordError of field_validation_error list
+  | IterableError of index_validation_error list
+[@@deriving show, eq]

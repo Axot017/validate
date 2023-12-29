@@ -19,14 +19,14 @@
  (name validator)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune (alcotest :with-test))
+ (depends (ocaml (= "5.1.0")) dune (alcotest :with-test) ppx_deriving)
  (tags
   (topics "to describe" your project)))
 (package
  (name ppx_derive_validator)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune)
+ (depends (ocaml (= "5.1.0")) dune)
  (tags
   (topics "to describe" your project)))
 

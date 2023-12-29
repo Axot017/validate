@@ -1,3 +1,4 @@
 (library
   (name validator)
-  (public_name validator))
+  (public_name validator)
+  (preprocess (pps ppx_deriving.show ppx_deriving.eq)))

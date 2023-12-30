@@ -21,6 +21,15 @@ let invalid_alpha_numeric_error_code = "invalid_alpha_numeric"
 let invalid_lowercase_error_code = "invalid_lowercase"
 let invalid_uppercase_error_code = "invalid_uppercase"
 
+let invalid_lowercase_alpha_numeric_error_code =
+  "invalid_lowercase_alpha_numeric"
+
+let invalid_uppercase_alpha_numeric_error_code =
+  "invalid_uppercase_alpha_numeric"
+
+(* Custom *)
+let invalid_url_error_code = "invalid_url"
+
 type base_validation_error = { code : string; params : (string * string) list }
 [@@deriving show, eq]
 

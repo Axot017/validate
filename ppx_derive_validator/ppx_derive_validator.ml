@@ -130,28 +130,109 @@ let extract_record_field (ld : label_declaration) =
   (* |> ignore; *)
   record_field
 
+let rec expr_list loc = function
+  | [] -> Exp.construct { txt = Lident "[]"; loc } None
+  | x :: xs ->
+      Exp.construct { txt = Lident "::"; loc }
+        (Some (Exp.tuple [ x; expr_list loc xs ]))
+
+let generate_field_validations (f : record_field) =
+  let open Exp in
+  (* Function to create a validation expression for min_length *)
+  let min_length_expr min_len =
+    apply
+      (ident
+         {
+           txt = Ldot (Lident "Validator", "validate_min_length");
+           loc = !default_loc;
+         })
+      [
+        ( Nolabel,
+          ident { txt = Ldot (Lident "String", "length"); loc = !default_loc }
+        );
+        (Nolabel, constant (Pconst_integer (string_of_int min_len, None)));
+      ]
+  in
+
+  (* Function to create a validation expression for max_length *)
+  let max_length_expr max_len =
+    apply
+      (ident
+         {
+           txt = Ldot (Lident "Validator", "validate_max_length");
+           loc = !default_loc;
+         })
+      [
+        ( Nolabel,
+          ident { txt = Ldot (Lident "String", "length"); loc = !default_loc }
+        );
+        (Nolabel, constant (Pconst_integer (string_of_int max_len, None)));
+      ]
+  in
+
+  (* Match validators and generate corresponding expressions *)
+  let validations =
+    match f.validators with
+    | { min_length = Some min_len; max_length = Some max_len; _ } ->
+        [ min_length_expr min_len; max_length_expr max_len ]
+    | { min_length = Some min_len; _ } -> [ min_length_expr min_len ]
+    | { max_length = Some max_len; _ } -> [ max_length_expr max_len ]
+    | _ -> []
+  in
+
+  let field_access_lambda =
+    fun_ Nolabel None
+      (Pat.var { txt = "x"; loc = !default_loc })
+      (field
+         (ident { txt = Lident "x"; loc = !default_loc })
+         { txt = Lident f.name; loc = !default_loc })
+  in
+
+  apply
+    (ident { txt = Ldot (Lident "Validator", "field"); loc = !default_loc })
+    [
+      (Nolabel, constant (Pconst_string (f.name, !default_loc, None)));
+      (Nolabel, field_access_lambda);
+      (Nolabel, expr_list !default_loc validations);
+    ]
+
 let map_type_declaration ~loc td =
   match td.ptype_kind with
   | Ptype_record label_declarations ->
-      let validators = label_declarations |> List.map extract_record_field in
-      validators |> ignore;
+      let field_validators =
+        label_declarations
+        |> List.map extract_record_field
+        |> List.map generate_field_validations
+      in
 
+      (* |> List.map Pprintast.string_of_expression *)
+      (* |> List.iter (Printf.printf "%s\n") *)
+      let body =
+        Exp.(
+          apply
+            (ident
+               { txt = Ldot (Lident "Validator", "record"); loc = !default_loc })
+            [ (Nolabel, expr_list !default_loc field_validators) ])
+      in
+
+      let body =
+        Exp.(
+          apply
+            (ident
+               {
+                 txt = Ldot (Lident "Validator", "validate");
+                 loc = !default_loc;
+               })
+            [ (Nolabel, body) ])
+      in
+
+      (* Create the function name *)
       let record_name = td.ptype_name.txt in
       let function_name = "validate_" ^ record_name in
 
-      (* Create a parameter for the function *)
-      let param_name = "record" in
-      let param_pattern = Pat.var { txt = param_name; loc } in
-
-      (* The body of the function *)
-      let body = Exp.constant (Pconst_string ("hello world", loc, None)) in
-
-      (* Construct the function expression *)
-      let function_expr = Exp.fun_ Nolabel None param_pattern body in
-
       (* Construct the value binding for the function *)
       let pattern = Pat.var { txt = function_name; loc } in
-      let value_binding = Vb.mk pattern function_expr in
+      let value_binding = Vb.mk pattern body in
 
       (* Create the structure item *)
       let function_item = Str.value Nonrecursive [ value_binding ] in

@@ -4,6 +4,10 @@ type 'a validator = 'a -> (unit, validation_error) result
 and ('a, 'b) field_extractor = 'a -> 'b
 and 'a field_validator = 'a -> (unit, field_validation_error) result
 
+let validate (validator : 'a validator) (value : 'a) :
+    ('a, validation_error) result =
+  match validator value with Ok _ -> Ok value | Error error -> Error error
+
 let field field_name (field_extractor : ('a, 'b) field_extractor)
     (validators : 'b validator list) record :
     (unit, field_validation_error) result =

@@ -1,7 +1,4 @@
-type test_record = {
-  min : string; [@min_length 2]
-  max : string; [@max_length 5]
-}
+type test_record = { min : string; max : string [@max_length 5] }
 [@@deriving validator, show, eq]
 
 let test_record_testable = Alcotest.testable pp_test_record equal_test_record

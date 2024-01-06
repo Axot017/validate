@@ -4,25 +4,25 @@ open Validators
 open Field
 open Utils
 
+let field_extractor_ext f =
+  let open Exp in
+  fun_ Nolabel None
+    (Pat.var { txt = "x"; loc = f.loc })
+    (field
+       (ident { txt = Lident "x"; loc = f.loc })
+       { txt = Lident f.name; loc = f.loc })
+
 let generate_field_validations (f, validators) =
   (* Match validators and generate corresponding expressions *)
   let open Exp in
-  let field_validator_ext = validator_ext f in
-  let exps = validators |> List.map field_validator_ext in
-
-  let field_access_lambda =
-    fun_ Nolabel None
-      (Pat.var { txt = "x"; loc = !default_loc })
-      (field
-         (ident { txt = Lident "x"; loc = !default_loc })
-         { txt = Lident f.name; loc = !default_loc })
-  in
+  let field_validator_exp = validator_exp f in
+  let exps = validators |> List.map field_validator_exp in
 
   apply
-    (ident { txt = Ldot (Lident "Validator", "field"); loc = !default_loc })
+    (ident { txt = Ldot (Lident "Validator", "field"); loc = f.loc })
     [
-      (Nolabel, constant (Pconst_string (f.name, !default_loc, None)));
-      (Nolabel, field_access_lambda);
+      (Nolabel, constant (Pconst_string (f.name, f.loc, None)));
+      (Nolabel, field_extractor_ext f);
       (Nolabel, expr_list !default_loc exps);
     ]
 
@@ -41,14 +41,15 @@ let map_type_declaration ~loc td =
         |> List.map generate_field_validations
       in
 
+      (* field_validators *)
       (* |> List.map Pprintast.string_of_expression *)
-      (* |> List.iter (Printf.printf "%s\n") *)
+      (* |> List.iter (Printf.printf "%s\n"); *)
       let body =
         Exp.(
           apply
             (ident
-               { txt = Ldot (Lident "Validator", "record"); loc = !default_loc })
-            [ (Nolabel, expr_list !default_loc field_validators) ])
+               { txt = Ldot (Lident "Validator", "record"); loc = td.ptype_loc })
+            [ (Nolabel, expr_list td.ptype_loc field_validators) ])
       in
 
       let body =
@@ -57,7 +58,7 @@ let map_type_declaration ~loc td =
             (ident
                {
                  txt = Ldot (Lident "Validator", "validate");
-                 loc = !default_loc;
+                 loc = td.ptype_loc;
                })
             [ (Nolabel, body) ])
       in

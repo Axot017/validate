@@ -17,15 +17,11 @@ let invalid_pattern_error_code = "invalid_pattern"
 let invalid_uuid_error_code = "invalid_uuid"
 let invalid_numeric_error_code = "invalid_numeric"
 let invalid_alpha_error_code = "invalid_alpha"
-let invalid_alpha_numeric_error_code = "invalid_alpha_numeric"
+let invalid_alphanumeric_error_code = "invalid_alphanumeric"
 let invalid_lowercase_error_code = "invalid_lowercase"
 let invalid_uppercase_error_code = "invalid_uppercase"
-
-let invalid_lowercase_alpha_numeric_error_code =
-  "invalid_lowercase_alpha_numeric"
-
-let invalid_uppercase_alpha_numeric_error_code =
-  "invalid_uppercase_alpha_numeric"
+let invalid_lowercase_alphanumeric_error_code = "invalid_lowercase_alphanumeric"
+let invalid_uppercase_alphanumeric_error_code = "invalid_uppercase_alphanumeric"
 
 (* Custom *)
 let invalid_url_error_code = "invalid_url"

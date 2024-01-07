@@ -1,7 +1,12 @@
-module Test = struct
+module Test : sig
+  type t = { min_module : string [@min_length 2] }
+  [@@deriving validator, show, eq]
+end = struct
   type t = { min_module : string [@min_length 2] }
   [@@deriving validator, show, eq]
 end
+
+let _ = Test.show
 
 type other_test_record = { other_min : string [@min_length 2] }
 [@@deriving validator, show, eq]

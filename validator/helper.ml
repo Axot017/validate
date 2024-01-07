@@ -67,3 +67,7 @@ let list (validators : 'a validator list) iterable :
 let option (validator : 'a validator) : 'a option validator = function
   | Some value -> validator value
   | None -> Ok ()
+
+let ignore_ok f v =
+  let result = f v in
+  match result with Ok _ -> Ok () | Error _ as error -> error

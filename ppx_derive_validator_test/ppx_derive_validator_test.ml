@@ -1,3 +1,11 @@
+module Test = struct
+  type t = { min_module : string [@min_length 2] }
+  [@@deriving validator, show, eq]
+end
+
+type other_test_record = { other_min : string [@min_length 2] }
+[@@deriving validator, show, eq]
+
 type test_record = {
   min : string; [@min_length 2]
   max : string; [@max_length 5]
@@ -21,6 +29,9 @@ type test_record = {
   test_list : string list; [@min_length 2]
   list_min_length : string list; [@list_min_length 3] [@min_length 1]
   list_max_length : string list; [@list_max_length 5] [@max_length 3]
+  other_test_record : other_test_record; [@dive]
+  module_test_record : Test.t; [@dive]
+  other_test_record_list : other_test_record list; [@dive] [@list_min_length 2]
 }
 [@@deriving validator, show, eq]
 
@@ -58,6 +69,9 @@ let test_err () =
         test_list = [ "1"; "234"; "5" ];
         list_min_length = [ ""; "2" ];
         list_max_length = [ "1"; "2"; "3"; "4"; "5"; "67890" ];
+        other_test_record = { other_min = "1" };
+        module_test_record = { Test.min_module = "1" };
+        other_test_record_list = [ { other_min = "1" } ];
       }
   in
   Alcotest.(check (result test_record_testable validation_error_testable))
@@ -65,6 +79,56 @@ let test_err () =
     (Error
        (Validator.RecordError
           [
+            ( "other_test_record_list",
+              [
+                Validator.IterableError
+                  [
+                    ( 0,
+                      [
+                        Validator.RecordError
+                          [
+                            ( "other_min",
+                              [
+                                Validator.BaseError
+                                  {
+                                    code = "min_length";
+                                    params = [ ("threshold", "2") ];
+                                  };
+                              ] );
+                          ];
+                      ] );
+                  ];
+                Validator.BaseError
+                  { code = "min_length"; params = [ ("threshold", "2") ] };
+              ] );
+            ( "module_test_record",
+              [
+                Validator.RecordError
+                  [
+                    ( "min_module",
+                      [
+                        Validator.BaseError
+                          {
+                            code = "min_length";
+                            params = [ ("threshold", "2") ];
+                          };
+                      ] );
+                  ];
+              ] );
+            ( "other_test_record",
+              [
+                Validator.RecordError
+                  [
+                    ( "other_min",
+                      [
+                        Validator.BaseError
+                          {
+                            code = "min_length";
+                            params = [ ("threshold", "2") ];
+                          };
+                      ] );
+                  ];
+              ] );
             ( "list_max_length",
               [
                 Validator.IterableError
@@ -233,6 +297,9 @@ let test_ok () =
       test_list = [ "123"; "456"; "789" ];
       list_min_length = [ "1"; "2"; "3" ];
       list_max_length = [ "1"; "2"; "3"; "4"; "5" ];
+      other_test_record = { other_min = "12" };
+      module_test_record = { Test.min_module = "12" };
+      other_test_record_list = [ { other_min = "12" }; { other_min = "12" } ];
     }
   in
   let result = validate_test_record r in

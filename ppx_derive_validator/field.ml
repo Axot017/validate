@@ -12,7 +12,7 @@ and record_field_type =
   | Float
   | String
   | Option of record_field_type
-  | Custom of string
+  | Other of longident
   | List of record_field_type
 
 let rec extract_field_type label_loc (t : core_type) =
@@ -26,7 +26,7 @@ let rec extract_field_type label_loc (t : core_type) =
         Option (extract_field_type label_loc arg)
     | Ptyp_constr ({ txt = Lident "list"; _ }, [ arg ]) ->
         List (extract_field_type label_loc arg)
-    | Ptyp_constr ({ txt = Lident name; _ }, []) -> Custom name
+    | Ptyp_constr ({ txt = name; _ }, []) -> Other name
     | _ -> Location.raise_errorf ~loc:label_loc "Unsupported type"
   in
   field_type

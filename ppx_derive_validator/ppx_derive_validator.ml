@@ -1,14 +1,7 @@
 open Ppxlib
 open Ast_helper
 open Validators
-open Field
 open Utils
-
-let extract_field_data (f : label_declaration) =
-  let validators = extract_validators f in
-  let record_field = extract_record_field f in
-
-  (record_field, validators)
 
 let map_type_declaration ~loc td =
   match td.ptype_kind with
@@ -17,9 +10,9 @@ let map_type_declaration ~loc td =
         label_declarations |> List.map field_validator_exp
       in
 
-      field_validators
-      |> List.map Pprintast.string_of_expression
-      |> List.iter (Printf.printf "%s\n");
+      (* field_validators *)
+      (* |> List.map Pprintast.string_of_expression *)
+      (* |> List.iter (Printf.printf "%s\n"); *)
       let body =
         Exp.(
           apply
@@ -39,15 +32,12 @@ let map_type_declaration ~loc td =
             [ (Nolabel, body) ])
       in
 
-      (* Create the function name *)
       let record_name = td.ptype_name.txt in
       let function_name = "validate_" ^ record_name in
 
-      (* Construct the value binding for the function *)
       let pattern = Pat.var { txt = function_name; loc } in
       let value_binding = Vb.mk pattern body in
 
-      (* Create the structure item *)
       let function_item = Str.value Nonrecursive [ value_binding ] in
       [ function_item ]
   | _ -> Location.raise_errorf ~loc "Unsupported type"

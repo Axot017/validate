@@ -22,6 +22,7 @@ let equal_to = "equal_to"
 let not_equal_to = "not_equal_to"
 let list_min_length_key = "list_min_length"
 let list_max_length_key = "list_max_length"
+let dive = "dive"
 
 type list_validator = ListMinLength of int | ListMaxLength of int
 [@@deriving show]
@@ -111,6 +112,7 @@ let equal_to_attribute = number_attribute equal_to
 let not_equal_to_attribute = number_attribute not_equal_to
 let list_min_length_attribute = int_attrribute list_min_length_key
 let list_max_length_attribute = int_attrribute list_max_length_key
+let dive_attribute = unit_attribute dive
 
 let extract_list_validators (ld : label_declaration) =
   [
@@ -324,6 +326,24 @@ let list_specific_validator_exp record_field list_validator =
           (Nolabel, Exp.constant (Pconst_integer (string_of_int max, None)));
         ]
 
+let ignored_exp ~loc inner =
+  let open Exp in
+  apply
+    (ident { txt = Ldot (Lident "Validator", "ignore_ok"); loc })
+    [ (Nolabel, inner) ]
+
+let call_other_type_validator_exp ~loc type_name =
+  let open Exp in
+  let txt =
+    match type_name with
+    | Lident name -> Lident (Printf.sprintf "validate_%s" name)
+    | Ldot (module_name, name) ->
+        Ldot (module_name, Printf.sprintf "validate_%s" name)
+    | _ -> Location.raise_errorf ~loc "Something went wrong"
+  in
+
+  ident { txt; loc }
+
 let rec field_validators_list_exp f (ld : label_declaration) =
   match f.field_type with
   | List t ->
@@ -336,6 +356,15 @@ let rec field_validators_list_exp f (ld : label_declaration) =
             list_validator_exp ~loc:f.loc
             @@ field_validators_list_exp { f with field_type = t } ld;
           ])
+  | Other type_name ->
+      let divable = Attribute.get dive_attribute ld |> Option.is_some in
+      if divable then
+        expr_list f.loc
+          [
+            ignored_exp ~loc:f.loc
+            @@ call_other_type_validator_exp ~loc:f.loc type_name;
+          ]
+      else expr_list f.loc []
   | _ ->
       let generator = validator_exp f in
       let validators = extract_validators ld in

@@ -1,0 +1,3 @@
+(test
+  (name validate_test)
+  (libraries validate alcotest))

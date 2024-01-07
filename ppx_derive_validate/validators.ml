@@ -163,10 +163,10 @@ let length_ident f =
 let validator_exp_template ~loc validator_name params =
   let open Exp in
   match params with
-  | [] -> ident { txt = Ldot (Lident "Validator", validator_name); loc }
+  | [] -> ident { txt = Ldot (Lident "Validate", validator_name); loc }
   | _ ->
       apply
-        (ident { txt = Ldot (Lident "Validator", validator_name); loc })
+        (ident { txt = Ldot (Lident "Validate", validator_name); loc })
         params
 
 let max_length_validator_exp max record_field =
@@ -308,7 +308,7 @@ let field_extractor_exp f =
 let list_validator_exp ~loc inner =
   let open Exp in
   apply
-    (ident { txt = Ldot (Lident "Validator", "list"); loc })
+    (ident { txt = Ldot (Lident "Validate", "list"); loc })
     [ (Nolabel, inner) ]
 
 let list_specific_validator_exp record_field list_validator =
@@ -329,7 +329,7 @@ let list_specific_validator_exp record_field list_validator =
 let ignored_exp ~loc inner =
   let open Exp in
   apply
-    (ident { txt = Ldot (Lident "Validator", "ignore_ok"); loc })
+    (ident { txt = Ldot (Lident "Validate", "ignore_ok"); loc })
     [ (Nolabel, inner) ]
 
 let call_other_type_validator_exp ~loc type_name =
@@ -375,7 +375,7 @@ let field_validator_exp (ld : label_declaration) =
   let open Exp in
   let f = extract_record_field ld in
   apply
-    (ident { txt = Ldot (Lident "Validator", "field"); loc = f.loc })
+    (ident { txt = Ldot (Lident "Validate", "field"); loc = f.loc })
     [
       (Nolabel, constant (Pconst_string (f.name, f.loc, None)));
       (Nolabel, field_extractor_exp f);

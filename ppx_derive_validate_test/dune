@@ -1,0 +1,4 @@
+(test
+  (name ppx_derive_validate_test)
+  (preprocess (pps ppx_derive_validate ppx_deriving.show ppx_deriving.eq))
+  (libraries validate alcotest))

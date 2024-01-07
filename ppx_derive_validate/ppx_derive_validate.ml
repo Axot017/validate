@@ -17,7 +17,7 @@ let map_type_declaration ~loc td =
         Exp.(
           apply
             (ident
-               { txt = Ldot (Lident "Validator", "record"); loc = td.ptype_loc })
+               { txt = Ldot (Lident "Validate", "record"); loc = td.ptype_loc })
             [ (Nolabel, expr_list td.ptype_loc field_validators) ])
       in
 
@@ -26,7 +26,7 @@ let map_type_declaration ~loc td =
           apply
             (ident
                {
-                 txt = Ldot (Lident "Validator", "validate");
+                 txt = Ldot (Lident "Validate", "validate");
                  loc = td.ptype_loc;
                })
             [ (Nolabel, body) ])
@@ -52,7 +52,7 @@ let map_sig ~loc td =
       let input_type = Typ.constr { txt = Lident record_name; loc } [] in
       let output_type =
         Typ.constr
-          { txt = Ldot (Lident "Validator", "validation_error"); loc }
+          { txt = Ldot (Lident "Validate", "validation_error"); loc }
           []
       in
       let result_type =
@@ -73,6 +73,6 @@ let generate_intf ~ctxt (_rec_flag, type_declarations) =
 let () =
   let impl_generator = Deriving.Generator.V2.make_noarg generate_impl in
   let intf_generator = Deriving.Generator.V2.make_noarg generate_intf in
-  Deriving.add "validator" ~str_type_decl:impl_generator
+  Deriving.add "validate" ~str_type_decl:impl_generator
     ~sig_type_decl:intf_generator
   |> Deriving.ignore

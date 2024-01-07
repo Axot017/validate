@@ -5,7 +5,7 @@ type test_record = { a : string; b : string; c : string }
 let test_validate_record_error_simple () =
   let r = { a = "111"; b = "333"; c = "" } in
   let validate =
-    Validator.(
+    Validate.(
       record
         [
           field "a"
@@ -20,16 +20,16 @@ let test_validate_record_error_simple () =
   Alcotest.(check (result unit validation_error_testable))
     "validate record"
     (Error
-       (Validator.RecordError
+       (Validate.RecordError
           [
             ( "c",
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "min_length"; params = [ ("threshold", "1") ] };
               ] );
             ( "a",
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "max_length"; params = [ ("threshold", "2") ] };
               ] );
           ]))
@@ -38,7 +38,7 @@ let test_validate_record_error_simple () =
 let test_validate_record_ok_simple () =
   let r = { a = "111"; b = "333"; c = "444" } in
   let validate =
-    Validator.(
+    Validate.(
       record
         [
           field "a"
@@ -71,7 +71,7 @@ let test_validate_record_error_complex () =
     }
   in
   let validate =
-    Validator.(
+    Validate.(
       record
         [
           field "x1"
@@ -113,19 +113,19 @@ let test_validate_record_error_complex () =
   Alcotest.(check (result unit validation_error_testable))
     "validate record"
     (Error
-       (Validator.RecordError
+       (Validate.RecordError
           [
             ( "x3",
               [
-                Validator.IterableError
+                Validate.IterableError
                   [
                     ( 1,
                       [
-                        Validator.RecordError
+                        Validate.RecordError
                           [
                             ( "y2",
                               [
-                                Validator.BaseError
+                                Validate.BaseError
                                   {
                                     code = "max_length";
                                     params = [ ("threshold", "2") ];
@@ -133,7 +133,7 @@ let test_validate_record_error_complex () =
                               ] );
                             ( "y1",
                               [
-                                Validator.BaseError
+                                Validate.BaseError
                                   {
                                     code = "max_length";
                                     params = [ ("threshold", "2") ];
@@ -143,11 +143,11 @@ let test_validate_record_error_complex () =
                       ] );
                     ( 0,
                       [
-                        Validator.RecordError
+                        Validate.RecordError
                           [
                             ( "y2",
                               [
-                                Validator.BaseError
+                                Validate.BaseError
                                   {
                                     code = "max_length";
                                     params = [ ("threshold", "2") ];
@@ -159,11 +159,11 @@ let test_validate_record_error_complex () =
               ] );
             ( "x2",
               [
-                Validator.RecordError
+                Validate.RecordError
                   [
                     ( "y2",
                       [
-                        Validator.BaseError
+                        Validate.BaseError
                           {
                             code = "max_length";
                             params = [ ("threshold", "2") ];
@@ -171,7 +171,7 @@ let test_validate_record_error_complex () =
                       ] );
                     ( "y1",
                       [
-                        Validator.BaseError
+                        Validate.BaseError
                           {
                             code = "max_length";
                             params = [ ("threshold", "2") ];
@@ -181,7 +181,7 @@ let test_validate_record_error_complex () =
               ] );
             ( "x1",
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "max_length"; params = [ ("threshold", "2") ] };
               ] );
           ]))
@@ -196,7 +196,7 @@ let test_validate_record_ok_complex () =
     }
   in
   let validate =
-    Validator.(
+    Validate.(
       record
         [
           field "x1"
@@ -241,23 +241,23 @@ let test_validate_record_ok_complex () =
 let test_validate_list_error () =
   let r = [ "111"; "3"; "" ] in
   let validate =
-    Validator.(list [ validate_length_between String.length ~min:1 ~max:2 ])
+    Validate.(list [ validate_length_between String.length ~min:1 ~max:2 ])
   in
   let result = validate r in
 
   Alcotest.(check (result unit validation_error_testable))
     "validate list"
     (Error
-       (Validator.IterableError
+       (Validate.IterableError
           [
             ( 2,
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "min_length"; params = [ ("threshold", "1") ] };
               ] );
             ( 0,
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "max_length"; params = [ ("threshold", "2") ] };
               ] );
           ]))
@@ -266,7 +266,7 @@ let test_validate_list_error () =
 let test_validate_list_ok () =
   let r = [ "111"; "333"; "444" ] in
   let validate =
-    Validator.(
+    Validate.(
       list
         [
           validate_length_between String.length ~min:1 ~max:3;

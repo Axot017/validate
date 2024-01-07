@@ -1,6 +1,6 @@
 (lang dune 3.12)
 
-(name validator)
+(name validate)
 
 (generate_opam_files true)
 
@@ -16,14 +16,14 @@
 (documentation https://url/to/documentation)
 
 (package
- (name validator)
+ (name validate)
  (synopsis "A short synopsis")
  (description "A longer description")
  (depends (ocaml (= "5.1.0")) dune (alcotest :with-test) ppx_deriving re uri)
  (tags
   (topics "to describe" your project)))
 (package
- (name ppx_derive_validator)
+ (name ppx_derive_validate)
  (synopsis "A short synopsis")
  (description "A longer description")
  (depends (ocaml (= "5.1.0")) dune)

@@ -1,3 +1,0 @@
-(test
-  (name validator_test)
-  (libraries validator alcotest))

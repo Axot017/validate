@@ -1,15 +1,15 @@
 module Test : sig
   type t = { min_module : string [@min_length 2] }
-  [@@deriving validator, show, eq]
+  [@@deriving validate, show, eq]
 end = struct
   type t = { min_module : string [@min_length 2] }
-  [@@deriving validator, show, eq]
+  [@@deriving validate, show, eq]
 end
 
 let _ = Test.show
 
 type other_test_record = { other_min : string [@min_length 2] }
-[@@deriving validator, show, eq]
+[@@deriving validate, show, eq]
 
 type test_record = {
   min : string; [@min_length 2]
@@ -38,15 +38,14 @@ type test_record = {
   module_test_record : Test.t; [@dive]
   other_test_record_list : other_test_record list; [@dive] [@list_min_length 2]
 }
-[@@deriving validator, show, eq]
+[@@deriving validate, show, eq]
 
 (* type aaa = (string list list[@min_length 2]) [@@deriving validator] *)
 
 let test_record_testable = Alcotest.testable pp_test_record equal_test_record
 
 let validation_error_testable =
-  Alcotest.testable Validator.pp_validation_error
-    Validator.equal_validation_error
+  Alcotest.testable Validate.pp_validation_error Validate.equal_validation_error
 
 let test_err () =
   let result =
@@ -82,19 +81,19 @@ let test_err () =
   Alcotest.(check (result test_record_testable validation_error_testable))
     "returns Error"
     (Error
-       (Validator.RecordError
+       (Validate.RecordError
           [
             ( "other_test_record_list",
               [
-                Validator.IterableError
+                Validate.IterableError
                   [
                     ( 0,
                       [
-                        Validator.RecordError
+                        Validate.RecordError
                           [
                             ( "other_min",
                               [
-                                Validator.BaseError
+                                Validate.BaseError
                                   {
                                     code = "min_length";
                                     params = [ ("threshold", "2") ];
@@ -103,16 +102,16 @@ let test_err () =
                           ];
                       ] );
                   ];
-                Validator.BaseError
+                Validate.BaseError
                   { code = "min_length"; params = [ ("threshold", "2") ] };
               ] );
             ( "module_test_record",
               [
-                Validator.RecordError
+                Validate.RecordError
                   [
                     ( "min_module",
                       [
-                        Validator.BaseError
+                        Validate.BaseError
                           {
                             code = "min_length";
                             params = [ ("threshold", "2") ];
@@ -122,11 +121,11 @@ let test_err () =
               ] );
             ( "other_test_record",
               [
-                Validator.RecordError
+                Validate.RecordError
                   [
                     ( "other_min",
                       [
-                        Validator.BaseError
+                        Validate.BaseError
                           {
                             code = "min_length";
                             params = [ ("threshold", "2") ];
@@ -136,43 +135,43 @@ let test_err () =
               ] );
             ( "list_max_length",
               [
-                Validator.IterableError
+                Validate.IterableError
                   [
                     ( 5,
                       [
-                        Validator.BaseError
+                        Validate.BaseError
                           {
-                            Validator.code = "max_length";
+                            Validate.code = "max_length";
                             params = [ ("threshold", "3") ];
                           };
                       ] );
                   ];
-                Validator.BaseError
+                Validate.BaseError
                   { code = "max_length"; params = [ ("threshold", "5") ] };
               ] );
             ( "list_min_length",
               [
-                Validator.IterableError
+                Validate.IterableError
                   [
                     ( 0,
                       [
-                        Validator.BaseError
+                        Validate.BaseError
                           {
                             code = "min_length";
                             params = [ ("threshold", "1") ];
                           };
                       ] );
                   ];
-                Validator.BaseError
+                Validate.BaseError
                   { code = "min_length"; params = [ ("threshold", "3") ] };
               ] );
             ( "test_list",
               [
-                Validator.IterableError
+                Validate.IterableError
                   [
                     ( 2,
                       [
-                        Validator.BaseError
+                        Validate.BaseError
                           {
                             code = "min_length";
                             params = [ ("threshold", "2") ];
@@ -180,7 +179,7 @@ let test_err () =
                       ] );
                     ( 0,
                       [
-                        Validator.BaseError
+                        Validate.BaseError
                           {
                             code = "min_length";
                             params = [ ("threshold", "2") ];
@@ -190,22 +189,22 @@ let test_err () =
               ] );
             ( "option_some",
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "min_length"; params = [ ("threshold", "2") ] };
               ] );
             ( "not_equal_to",
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "value_not_equal_to"; params = [ ("value", "10") ] };
               ] );
             ( "equal_to",
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "value_equal_to"; params = [ ("value", "5") ] };
               ] );
             ( "greater_than_or_equal",
               [
-                Validator.BaseError
+                Validate.BaseError
                   {
                     code = "value_greater_than_or_equal";
                     params = [ ("threshold", "5") ];
@@ -213,7 +212,7 @@ let test_err () =
               ] );
             ( "greater_than",
               [
-                Validator.BaseError
+                Validate.BaseError
                   {
                     code = "value_greater_than";
                     params = [ ("threshold", "5") ];
@@ -221,7 +220,7 @@ let test_err () =
               ] );
             ( "less_than_or_equal",
               [
-                Validator.BaseError
+                Validate.BaseError
                   {
                     code = "value_less_than_or_equal";
                     params = [ ("threshold", "10") ];
@@ -229,49 +228,46 @@ let test_err () =
               ] );
             ( "less_than",
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "value_less_than"; params = [ ("threshold", "10") ] };
               ] );
             ( "uppercase_alphanumeric",
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "invalid_uppercase_alphanumeric"; params = [] };
               ] );
             ( "uppercase",
-              [
-                Validator.BaseError { code = "invalid_uppercase"; params = [] };
-              ] );
+              [ Validate.BaseError { code = "invalid_uppercase"; params = [] } ]
+            );
             ( "lowercase_alphanumeric",
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "invalid_lowercase_alphanumeric"; params = [] };
               ] );
             ( "lowercase",
-              [
-                Validator.BaseError { code = "invalid_lowercase"; params = [] };
-              ] );
+              [ Validate.BaseError { code = "invalid_lowercase"; params = [] } ]
+            );
             ( "alphanumeric",
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "invalid_alphanumeric"; params = [] };
               ] );
             ( "alpha",
-              [ Validator.BaseError { code = "invalid_alpha"; params = [] } ] );
+              [ Validate.BaseError { code = "invalid_alpha"; params = [] } ] );
             ( "numeric",
-              [ Validator.BaseError { code = "invalid_numeric"; params = [] } ]
+              [ Validate.BaseError { code = "invalid_numeric"; params = [] } ]
             );
             ( "uuid",
-              [ Validator.BaseError { code = "invalid_uuid"; params = [] } ] );
-            ( "url",
-              [ Validator.BaseError { code = "invalid_url"; params = [] } ] );
+              [ Validate.BaseError { code = "invalid_uuid"; params = [] } ] );
+            ("url", [ Validate.BaseError { code = "invalid_url"; params = [] } ]);
             ( "max",
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "max_length"; params = [ ("threshold", "5") ] };
               ] );
             ( "min",
               [
-                Validator.BaseError
+                Validate.BaseError
                   { code = "min_length"; params = [ ("threshold", "2") ] };
               ] );
           ]))
@@ -313,7 +309,7 @@ let test_ok () =
 
 let () =
   let open Alcotest in
-  run "Validator"
+  run "Validate"
     [
       ( "deriving",
         [ test_case "Error" `Quick test_err; test_case "Ok" `Quick test_ok ] );

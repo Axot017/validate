@@ -10,6 +10,12 @@ type test_record = {
   lowercase_alphanumeric : string; [@lowercase_alphanumeric]
   uppercase : string; [@uppercase]
   uppercase_alphanumeric : string; [@uppercase_alphanumeric]
+  less_than : int; [@less_than 10]
+  less_than_or_equal : int; [@less_than_or_equal 10]
+  greater_than : int; [@greater_than 5]
+  greater_than_or_equal : int; [@greater_than_or_equal 5]
+  equal_to : int; [@equal_to 5]
+  not_equal_to : int; [@not_equal_to 10]
 }
 [@@deriving validator, show, eq]
 
@@ -34,6 +40,12 @@ let test_err () =
         lowercase_alphanumeric = "aBC@";
         uppercase = "Abc";
         uppercase_alphanumeric = "Abc@";
+        less_than = 10;
+        less_than_or_equal = 11;
+        greater_than = 5;
+        greater_than_or_equal = 4;
+        equal_to = 4;
+        not_equal_to = 10;
       }
   in
   Alcotest.(check (result test_record_testable validation_error_testable))
@@ -41,6 +53,45 @@ let test_err () =
     (Error
        (Validator.RecordError
           [
+            ( "not_equal_to",
+              [
+                Validator.BaseError
+                  { code = "value_not_equal_to"; params = [ ("value", "10") ] };
+              ] );
+            ( "equal_to",
+              [
+                Validator.BaseError
+                  { code = "value_equal_to"; params = [ ("value", "5") ] };
+              ] );
+            ( "greater_than_or_equal",
+              [
+                Validator.BaseError
+                  {
+                    code = "value_greater_than_or_equal";
+                    params = [ ("threshold", "5") ];
+                  };
+              ] );
+            ( "greater_than",
+              [
+                Validator.BaseError
+                  {
+                    code = "value_greater_than";
+                    params = [ ("threshold", "5") ];
+                  };
+              ] );
+            ( "less_than_or_equal",
+              [
+                Validator.BaseError
+                  {
+                    code = "value_less_than_or_equal";
+                    params = [ ("threshold", "10") ];
+                  };
+              ] );
+            ( "less_than",
+              [
+                Validator.BaseError
+                  { code = "value_less_than"; params = [ ("threshold", "10") ] };
+              ] );
             ( "uppercase_alphanumeric",
               [
                 Validator.BaseError
@@ -100,6 +151,12 @@ let test_ok () =
       lowercase_alphanumeric = "abc123";
       uppercase = "ABC";
       uppercase_alphanumeric = "ABC123";
+      less_than = 9;
+      less_than_or_equal = 10;
+      greater_than = 6;
+      greater_than_or_equal = 5;
+      equal_to = 5;
+      not_equal_to = 9;
     }
   in
   let result = validate_test_record r in

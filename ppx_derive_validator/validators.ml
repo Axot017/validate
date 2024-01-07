@@ -13,6 +13,12 @@ let lowercase_key = "lowercase"
 let lowercase_alphanumeric_key = "lowercase_alphanumeric"
 let uppercase_key = "uppercase"
 let uppercase_alphanumeric_key = "uppercase_alphanumeric"
+let less_than = "less_than"
+let less_than_or_equal = "less_than_or_equal"
+let greater_than = "greater_than"
+let greater_than_or_equal = "greater_than_or_equal"
+let equal_to = "equal_to"
+let not_equal_to = "not_equal_to"
 
 type validator =
   | MinLength of int
@@ -26,8 +32,15 @@ type validator =
   | LowercaseAlphanumeric
   | Uppercase
   | UppercaseAlphanumeric
+  | LessThan of number
+  | LessThanOrEqual of number
+  | GreaterThan of number
+  | GreaterThanOrEqual of number
+  | EqualTo of number
+  | NotEqualTo of number
 [@@deriving show]
 
+and number = Int of int | Float of float [@@deriving show]
 and validators = validator list [@@deriving show]
 
 let string_of_validator = function
@@ -42,6 +55,22 @@ let string_of_validator = function
   | LowercaseAlphanumeric -> lowercase_alphanumeric_key
   | Uppercase -> uppercase_key
   | UppercaseAlphanumeric -> uppercase_alphanumeric_key
+  | LessThan _ -> less_than
+  | LessThanOrEqual _ -> less_than_or_equal
+  | GreaterThan _ -> greater_than
+  | GreaterThanOrEqual _ -> greater_than_or_equal
+  | EqualTo _ -> equal_to
+  | NotEqualTo _ -> not_equal_to
+
+let process_numeric_attribute ?loc = function
+  | Pconst_integer (i, _) -> Int (int_of_string i)
+  | Pconst_float (f, _) -> Float (float_of_string f)
+  | _ -> Location.raise_errorf ?loc "Attribute must be an integer or float"
+
+let number_attribute ?loc name =
+  Attribute.declare name Attribute.Context.label_declaration
+    Ast_pattern.(single_expr_payload (pexp_constant __))
+    (process_numeric_attribute ?loc)
 
 let int_attrribute name =
   Attribute.declare
@@ -68,6 +97,12 @@ let lowercase_attribute = unit_attribute lowercase_key
 let lowercase_alphanumeric_attribute = unit_attribute lowercase_alphanumeric_key
 let uppercase_attribute = unit_attribute uppercase_key
 let uppercase_alphanumeric_attribute = unit_attribute uppercase_alphanumeric_key
+let less_than_attribute = number_attribute less_than
+let less_than_or_equal_attribute = number_attribute less_than_or_equal
+let greater_than_attribute = number_attribute greater_than
+let greater_than_or_equal_attribute = number_attribute greater_than_or_equal
+let equal_to_attribute = number_attribute equal_to
+let not_equal_to_attribute = number_attribute not_equal_to
 
 let extract_validators (ld : label_declaration) =
   [
@@ -85,6 +120,16 @@ let extract_validators (ld : label_declaration) =
     Attribute.get uppercase_attribute ld |> Option.map (fun _ -> Uppercase);
     Attribute.get uppercase_alphanumeric_attribute ld
     |> Option.map (fun _ -> UppercaseAlphanumeric);
+    Attribute.get less_than_attribute ld |> Option.map (fun x -> LessThan x);
+    Attribute.get less_than_or_equal_attribute ld
+    |> Option.map (fun x -> LessThanOrEqual x);
+    Attribute.get greater_than_attribute ld
+    |> Option.map (fun x -> GreaterThan x);
+    Attribute.get greater_than_or_equal_attribute ld
+    |> Option.map (fun x -> GreaterThanOrEqual x);
+    Attribute.get equal_to_attribute ld |> Option.map (fun x -> EqualTo x);
+    Attribute.get not_equal_to_attribute ld
+    |> Option.map (fun x -> NotEqualTo x);
   ]
   |> List.filter_map (fun x -> x)
 
@@ -148,6 +193,56 @@ let uppercase_alphanumeric_validator_exp record_field =
   validator_exp_template "validate_uppercase_alphanumeric" ~loc:record_field.loc
     []
 
+let number_to_exp = function
+  | Int i -> Exp.constant (Pconst_integer (string_of_int i, None))
+  | Float f -> Exp.constant (Pconst_float (string_of_float f, None))
+
+let number_to_str_exp ~loc = function
+  | Int _ -> Exp.ident { txt = Lident "string_of_int"; loc }
+  | Float _ -> Exp.ident { txt = Lident "string_of_float"; loc }
+
+let less_than_validator_exp number record_field =
+  validator_exp_template "validate_less_than" ~loc:record_field.loc
+    [
+      (Nolabel, number_to_str_exp ~loc:record_field.loc number);
+      (Nolabel, number_to_exp number);
+    ]
+
+let less_than_or_equal_validator_exp number record_field =
+  validator_exp_template "validate_less_than_or_equal" ~loc:record_field.loc
+    [
+      (Nolabel, number_to_str_exp ~loc:record_field.loc number);
+      (Nolabel, number_to_exp number);
+    ]
+
+let greater_than_validator_exp number record_field =
+  validator_exp_template "validate_greater_than" ~loc:record_field.loc
+    [
+      (Nolabel, number_to_str_exp ~loc:record_field.loc number);
+      (Nolabel, number_to_exp number);
+    ]
+
+let greater_than_or_equal_validator_exp number record_field =
+  validator_exp_template "validate_greater_than_or_equal" ~loc:record_field.loc
+    [
+      (Nolabel, number_to_str_exp ~loc:record_field.loc number);
+      (Nolabel, number_to_exp number);
+    ]
+
+let equal_to_validator_exp number record_field =
+  validator_exp_template "validate_equal_to" ~loc:record_field.loc
+    [
+      (Nolabel, number_to_str_exp ~loc:record_field.loc number);
+      (Nolabel, number_to_exp number);
+    ]
+
+let not_equal_to_validator_exp number record_field =
+  validator_exp_template "validate_not_equal_to" ~loc:record_field.loc
+    [
+      (Nolabel, number_to_str_exp ~loc:record_field.loc number);
+      (Nolabel, number_to_exp number);
+    ]
+
 let validator_exp record_field = function
   | MaxLength max -> max_length_validator_exp max record_field
   | MinLength min -> min_length_validator_exp min record_field
@@ -160,6 +255,14 @@ let validator_exp record_field = function
   | LowercaseAlphanumeric -> lowercase_alphanumeric_validator_exp record_field
   | Uppercase -> uppercase_validator_exp record_field
   | UppercaseAlphanumeric -> uppercase_alphanumeric_validator_exp record_field
+  | LessThan number -> less_than_validator_exp number record_field
+  | LessThanOrEqual number ->
+      less_than_or_equal_validator_exp number record_field
+  | GreaterThan number -> greater_than_validator_exp number record_field
+  | GreaterThanOrEqual number ->
+      greater_than_or_equal_validator_exp number record_field
+  | EqualTo number -> equal_to_validator_exp number record_field
+  | NotEqualTo number -> not_equal_to_validator_exp number record_field
 
 let check_if_validator_applicable validator record_field =
   match validator with
@@ -174,6 +277,14 @@ let check_if_validator_applicable validator record_field =
   | LowercaseAlphanumeric | Uppercase | UppercaseAlphanumeric -> (
       match record_field.field_type with
       | String -> ()
+      | _ ->
+          Location.raise_errorf ~loc:record_field.loc
+            "%s is not supported for this type"
+            (string_of_validator validator))
+  | LessThan _ | LessThanOrEqual _ | GreaterThan _ | GreaterThanOrEqual _
+  | EqualTo _ | NotEqualTo _ -> (
+      match record_field.field_type with
+      | Int | Float -> ()
       | _ ->
           Location.raise_errorf ~loc:record_field.loc
             "%s is not supported for this type"

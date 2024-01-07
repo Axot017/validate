@@ -41,9 +41,9 @@ let map_type_declaration ~loc td =
         |> List.map generate_field_validations
       in
 
-      (* field_validators *)
-      (* |> List.map Pprintast.string_of_expression *)
-      (* |> List.iter (Printf.printf "%s\n"); *)
+      field_validators
+      |> List.map Pprintast.string_of_expression
+      |> List.iter (Printf.printf "%s\n");
       let body =
         Exp.(
           apply

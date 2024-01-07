@@ -4,8 +4,8 @@ let max_length_error_code = "max_length"
 let length_equals_error_code = "length_equals"
 
 (* Value *)
-let value_equals_error_code = "value_equals"
-let value_not_equals_error_code = "value_not_equals"
+let value_equal_to_error_code = "value_equal_to"
+let value_not_equal_to_error_code = "value_not_equal_to"
 let value_greater_than_error_code = "value_greater_than"
 let value_greater_than_or_equal_error_code = "value_greater_than_or_equal"
 let value_less_than_error_code = "value_less_than"

@@ -18,8 +18,13 @@ type test_record = {
   not_equal_to : int; [@not_equal_to 10]
   option_some : string option; [@min_length 2]
   option_none : string option; [@min_length 2]
+  test_list : string list; [@min_length 2]
+  list_min_length : string list; [@list_min_length 3] [@min_length 1]
+  list_max_length : string list; [@list_max_length 5] [@max_length 3]
 }
 [@@deriving validator, show, eq]
+
+(* type aaa = (string list list[@min_length 2]) [@@deriving validator] *)
 
 let test_record_testable = Alcotest.testable pp_test_record equal_test_record
 
@@ -50,6 +55,9 @@ let test_err () =
         not_equal_to = 10;
         option_some = Some "1";
         option_none = None;
+        test_list = [ "1"; "234"; "5" ];
+        list_min_length = [ ""; "2" ];
+        list_max_length = [ "1"; "2"; "3"; "4"; "5"; "67890" ];
       }
   in
   Alcotest.(check (result test_record_testable validation_error_testable))
@@ -57,6 +65,60 @@ let test_err () =
     (Error
        (Validator.RecordError
           [
+            ( "list_max_length",
+              [
+                Validator.IterableError
+                  [
+                    ( 5,
+                      [
+                        Validator.BaseError
+                          {
+                            Validator.code = "max_length";
+                            params = [ ("threshold", "3") ];
+                          };
+                      ] );
+                  ];
+                Validator.BaseError
+                  { code = "max_length"; params = [ ("threshold", "5") ] };
+              ] );
+            ( "list_min_length",
+              [
+                Validator.IterableError
+                  [
+                    ( 0,
+                      [
+                        Validator.BaseError
+                          {
+                            code = "min_length";
+                            params = [ ("threshold", "1") ];
+                          };
+                      ] );
+                  ];
+                Validator.BaseError
+                  { code = "min_length"; params = [ ("threshold", "3") ] };
+              ] );
+            ( "test_list",
+              [
+                Validator.IterableError
+                  [
+                    ( 2,
+                      [
+                        Validator.BaseError
+                          {
+                            code = "min_length";
+                            params = [ ("threshold", "2") ];
+                          };
+                      ] );
+                    ( 0,
+                      [
+                        Validator.BaseError
+                          {
+                            code = "min_length";
+                            params = [ ("threshold", "2") ];
+                          };
+                      ] );
+                  ];
+              ] );
             ( "option_some",
               [
                 Validator.BaseError
@@ -168,6 +230,9 @@ let test_ok () =
       not_equal_to = 9;
       option_some = Some "12";
       option_none = None;
+      test_list = [ "123"; "456"; "789" ];
+      list_min_length = [ "1"; "2"; "3" ];
+      list_max_length = [ "1"; "2"; "3"; "4"; "5" ];
     }
   in
   let result = validate_test_record r in

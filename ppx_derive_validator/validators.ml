@@ -243,26 +243,42 @@ let not_equal_to_validator_exp number record_field =
       (Nolabel, number_to_exp number);
     ]
 
-let validator_exp record_field = function
-  | MaxLength max -> max_length_validator_exp max record_field
-  | MinLength min -> min_length_validator_exp min record_field
-  | Url -> url_validator_exp record_field
-  | Uuid -> uuid_validator_exp record_field
-  | Numeric -> numeric_validator_exp record_field
-  | Alpha -> alpha_validator_exp record_field
-  | Alphanumeric -> alphanumeric_validator_exp record_field
-  | Lowercase -> lowercase_validator_exp record_field
-  | LowercaseAlphanumeric -> lowercase_alphanumeric_validator_exp record_field
-  | Uppercase -> uppercase_validator_exp record_field
-  | UppercaseAlphanumeric -> uppercase_alphanumeric_validator_exp record_field
-  | LessThan number -> less_than_validator_exp number record_field
-  | LessThanOrEqual number ->
-      less_than_or_equal_validator_exp number record_field
-  | GreaterThan number -> greater_than_validator_exp number record_field
-  | GreaterThanOrEqual number ->
-      greater_than_or_equal_validator_exp number record_field
-  | EqualTo number -> equal_to_validator_exp number record_field
-  | NotEqualTo number -> not_equal_to_validator_exp number record_field
+let option_validator_exp record_field inner =
+  validator_exp_template "option" ~loc:record_field.loc [ (Nolabel, inner) ]
+
+let rec validator_exp record_field validator =
+  match record_field.field_type with
+  | Bool | Int | Float | String -> (
+      match validator with
+      | MaxLength max -> max_length_validator_exp max record_field
+      | MinLength min -> min_length_validator_exp min record_field
+      | Url -> url_validator_exp record_field
+      | Uuid -> uuid_validator_exp record_field
+      | Numeric -> numeric_validator_exp record_field
+      | Alpha -> alpha_validator_exp record_field
+      | Alphanumeric -> alphanumeric_validator_exp record_field
+      | Lowercase -> lowercase_validator_exp record_field
+      | LowercaseAlphanumeric ->
+          lowercase_alphanumeric_validator_exp record_field
+      | Uppercase -> uppercase_validator_exp record_field
+      | UppercaseAlphanumeric ->
+          uppercase_alphanumeric_validator_exp record_field
+      | LessThan number -> less_than_validator_exp number record_field
+      | LessThanOrEqual number ->
+          less_than_or_equal_validator_exp number record_field
+      | GreaterThan number -> greater_than_validator_exp number record_field
+      | GreaterThanOrEqual number ->
+          greater_than_or_equal_validator_exp number record_field
+      | EqualTo number -> equal_to_validator_exp number record_field
+      | NotEqualTo number -> not_equal_to_validator_exp number record_field)
+  | Option inner_record_field_type ->
+      option_validator_exp record_field
+        (validator_exp
+           { record_field with field_type = inner_record_field_type }
+           validator)
+  | _ ->
+      Location.raise_errorf ~loc:record_field.loc
+        "Validator not supported for this type"
 
 let check_if_validator_applicable validator record_field =
   match validator with

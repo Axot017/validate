@@ -7,10 +7,10 @@ type record_field = {
 }
 
 and record_field_type =
-  | String
-  | Int
   | Bool
+  | Int
   | Float
+  | String
   | Option of record_field_type
   | Custom of string
   | List of record_field_type

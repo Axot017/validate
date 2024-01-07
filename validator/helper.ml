@@ -63,3 +63,7 @@ let list (validators : 'a validator list) iterable :
   match validate iterable [] 0 with
   | [] -> Ok ()
   | errors -> Error (IterableError errors)
+
+let option (validator : 'a validator) : 'a option validator = function
+  | Some value -> validator value
+  | None -> Ok ()

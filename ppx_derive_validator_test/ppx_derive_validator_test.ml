@@ -16,6 +16,8 @@ type test_record = {
   greater_than_or_equal : int; [@greater_than_or_equal 5]
   equal_to : int; [@equal_to 5]
   not_equal_to : int; [@not_equal_to 10]
+  option_some : string option; [@min_length 2]
+  option_none : string option; [@min_length 2]
 }
 [@@deriving validator, show, eq]
 
@@ -46,6 +48,8 @@ let test_err () =
         greater_than_or_equal = 4;
         equal_to = 4;
         not_equal_to = 10;
+        option_some = Some "1";
+        option_none = None;
       }
   in
   Alcotest.(check (result test_record_testable validation_error_testable))
@@ -53,6 +57,11 @@ let test_err () =
     (Error
        (Validator.RecordError
           [
+            ( "option_some",
+              [
+                Validator.BaseError
+                  { code = "min_length"; params = [ ("threshold", "2") ] };
+              ] );
             ( "not_equal_to",
               [
                 Validator.BaseError
@@ -157,6 +166,8 @@ let test_ok () =
       greater_than_or_equal = 5;
       equal_to = 5;
       not_equal_to = 9;
+      option_some = Some "12";
+      option_none = None;
     }
   in
   let result = validate_test_record r in

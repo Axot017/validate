@@ -1,6 +1,6 @@
 (library
   (name ppx_derive_validate)
+  (public_name validate.ppx_derive_validate)
   (libraries ppxlib)
   (kind ppx_deriver)
-  (preprocess (pps ppxlib.metaquot ppx_deriving.show ppx_deriving.eq))
-  (public_name ppx_derive_validate))
+  (preprocess (pps ppxlib.metaquot ppx_deriving.show ppx_deriving.eq)))

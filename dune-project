@@ -22,12 +22,5 @@
  (depends (ocaml (= "5.1.0")) dune (alcotest :with-test) ppx_deriving re uri)
  (tags
   (topics "to describe" your project)))
-(package
- (name ppx_derive_validate)
- (synopsis "A short synopsis")
- (description "A longer description")
- (depends (ocaml (= "5.1.0")) dune)
- (tags
-  (topics "to describe" your project)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

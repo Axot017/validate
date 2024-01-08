@@ -5,22 +5,22 @@
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github Axot017/validate))
 
-(authors "Author Name")
+(authors "Mateusz Ledwoń <mateuszledwon@duck.com>")
 
-(maintainers "Maintainer Name")
+(maintainers "Mateusz Ledwoń <mateuszledwon@duck.com>")
 
-(license LICENSE)
+(license MIT)
 
-(documentation https://url/to/documentation)
+(documentation https://github.com/Axot017/validate)
 
 (package
  (name validate)
- (synopsis "A short synopsis")
- (description "A longer description")
+ (synopsis "OCaml library enabling efficient data validation through PPX derivers and a suite of annotation-based validators.")
+ (description "Validate is an OCaml library that focuses on data validation using PPX derivers and a range of annotations for different data types. It allows developers to apply annotations for various validation rules, such as string length, numeric values, and format constraints like URLs and UUIDs. This functionality makes it suitable for a wide array of applications in OCaml development where data integrity is crucial.")
  (depends (ocaml (= "5.1.0")) dune (alcotest :with-test) ppx_deriving re uri)
  (tags
-  (topics "to describe" your project)))
+  (validation ppx)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

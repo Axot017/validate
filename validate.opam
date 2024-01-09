@@ -12,7 +12,7 @@ homepage: "https://github.com/Axot017/validate"
 doc: "https://axot017.github.io/validate/"
 bug-reports: "https://github.com/Axot017/validate/issues"
 depends: [
-  "ocaml" {= "5.1.0"}
+  "ocaml"
   "dune" {>= "3.12"}
   "alcotest" {with-test}
   "ppx_deriving"

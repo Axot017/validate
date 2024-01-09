@@ -37,10 +37,9 @@ type test_record = {
   other_test_record : other_test_record; [@dive]
   module_test_record : Test.t; [@dive]
   other_test_record_list : other_test_record list; [@dive] [@list_min_length 2]
+  email : string; [@email]
 }
 [@@deriving validate, show, eq]
-
-(* type aaa = (string list list[@min_length 2]) [@@deriving validator] *)
 
 let test_record_testable = Alcotest.testable pp_test_record equal_test_record
 
@@ -76,6 +75,7 @@ let test_err () =
         other_test_record = { other_min = "1" };
         module_test_record = { Test.min_module = "1" };
         other_test_record_list = [ { other_min = "1" } ];
+        email = "invalid email";
       }
   in
   Alcotest.(check (result test_record_testable validation_error_testable))
@@ -83,6 +83,8 @@ let test_err () =
     (Error
        (Validate.RecordError
           [
+            ( "email",
+              [ Validate.BaseError { code = "invalid_email"; params = [] } ] );
             ( "other_test_record_list",
               [
                 Validate.IterableError
@@ -301,6 +303,7 @@ let test_ok () =
       other_test_record = { other_min = "12" };
       module_test_record = { Test.min_module = "12" };
       other_test_record_list = [ { other_min = "12" }; { other_min = "12" } ];
+      email = "example@gmail.com";
     }
   in
   let result = validate_test_record r in

@@ -20,6 +20,7 @@ let greater_than = "greater_than"
 let greater_than_or_equal = "greater_than_or_equal"
 let equal_to = "equal_to"
 let not_equal_to = "not_equal_to"
+let email = "email"
 let list_min_length_key = "list_min_length"
 let list_max_length_key = "list_max_length"
 let dive = "dive"
@@ -45,6 +46,7 @@ type validator =
   | GreaterThanOrEqual of number
   | EqualTo of number
   | NotEqualTo of number
+  | Email
 [@@deriving show]
 
 and number = Int of int | Float of float [@@deriving show]
@@ -68,6 +70,7 @@ let string_of_validator = function
   | GreaterThanOrEqual _ -> greater_than_or_equal
   | EqualTo _ -> equal_to
   | NotEqualTo _ -> not_equal_to
+  | Email -> email
 
 let process_numeric_attribute ?loc = function
   | Pconst_integer (i, _) -> Int (int_of_string i)
@@ -113,6 +116,7 @@ let not_equal_to_attribute = number_attribute not_equal_to
 let list_min_length_attribute = int_attrribute list_min_length_key
 let list_max_length_attribute = int_attrribute list_max_length_key
 let dive_attribute = unit_attribute dive
+let email_attribute = unit_attribute email
 
 let extract_list_validators (ld : label_declaration) =
   [
@@ -149,6 +153,7 @@ let extract_validators (ld : label_declaration) =
     Attribute.get equal_to_attribute ld |> Option.map (fun x -> EqualTo x);
     Attribute.get not_equal_to_attribute ld
     |> Option.map (fun x -> NotEqualTo x);
+    Attribute.get email_attribute ld |> Option.map (fun _ -> Email);
   ]
   |> List.filter_map (fun x -> x)
 
@@ -265,6 +270,9 @@ let not_equal_to_validator_exp number record_field =
 let option_validator_exp record_field inner =
   validator_exp_template "option" ~loc:record_field.loc [ (Nolabel, inner) ]
 
+let email_validator_exp record_field =
+  validator_exp_template "validate_email" ~loc:record_field.loc []
+
 let rec validator_exp record_field validator =
   match record_field.field_type with
   | Bool | Int | Float | String -> (
@@ -289,7 +297,8 @@ let rec validator_exp record_field validator =
       | GreaterThanOrEqual number ->
           greater_than_or_equal_validator_exp number record_field
       | EqualTo number -> equal_to_validator_exp number record_field
-      | NotEqualTo number -> not_equal_to_validator_exp number record_field)
+      | NotEqualTo number -> not_equal_to_validator_exp number record_field
+      | Email -> email_validator_exp record_field)
   | Option inner_record_field_type ->
       option_validator_exp record_field
         (validator_exp

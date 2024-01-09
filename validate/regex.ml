@@ -13,6 +13,11 @@ let uppercase_regex = Re.Perl.re "^[A-Z]*$" |> Re.compile
 let lowercase_alphanumeric_regex = Re.Perl.re "^[a-z0-9]*$" |> Re.compile
 let uppercase_alphanumeric_regex = Re.Perl.re "^[A-Z0-9]*$" |> Re.compile
 
+let email_regex =
+  Re.Perl.re
+    "^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
+  |> Re.compile
+
 let _validate_regex code regex str =
   let result = Re.execp regex str in
   if result then Ok () else Error (BaseError { code; params = [] })
@@ -44,3 +49,6 @@ let validate_lowercase_alphanumeric str =
 let validate_uppercase_alphanumeric str =
   _validate_regex invalid_uppercase_alphanumeric_error_code
     uppercase_alphanumeric_regex str
+
+let validate_email str =
+  _validate_regex invalid_email_error_code email_regex str

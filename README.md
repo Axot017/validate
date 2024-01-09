@@ -68,6 +68,7 @@ String Annotations
 - `@uppercase`: Ensures a string is in uppercase.
 - `@lowercase_alphanumeric`: Validates a lowercase alphanumeric string.
 - `@uppercase_alphanumeric`: Validates an uppercase alphanumeric string.
+- `@email`: Checks if a string is a valid email.
 
 Integer/Float Annotations
 

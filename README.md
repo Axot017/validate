@@ -1,5 +1,9 @@
 # Validate
 
+**Note**: This is a preview version of the `validate` library. 
+It is still under development, and users may encounter errors. 
+Feedback and contributions are highly appreciated during this stage.
+
 ## Overview
 `validate` is an OCaml library designed to streamline the process of validating records, lists, 
 or values. It primarily operates through a PPX deriver that automatically generates 
@@ -26,8 +30,7 @@ Here is an example of how to set up the dune file:
 ## Annotations and Usage
 
 The `validate` library in OCaml allows for precise validation of data through a variety of annotations. 
-Below is an example of their usage in a record, followed by a comprehensive list of the available annotations, 
-categorized by the type they are applicable to.
+For each type, the library generates a function named `validate_[type_name]` which can be used to perform the validation.
 
 ### Example Usage
 
@@ -39,6 +42,9 @@ type test_record = {
   ...
 }
 [@@deriving validate, show, eq]
+
+let example_record = { min = "ab"; max = "hello"; numeric_list = [1, 2, 3] }
+let validation_result = validate_test_record example_record
 ```
 
 In this example:

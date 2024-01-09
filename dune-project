@@ -17,7 +17,7 @@
 
 (package
  (name validate)
- (synopsis "OCaml library enabling efficient data validation through PPX derivers and a suite of annotation-based validators.")
+ (synopsis "OCaml library enabling efficient data validation through PPX derivers and a suite of annotation-based validators")
  (description "Validate is an OCaml library that focuses on data validation using PPX derivers and a range of annotations for different data types. It allows developers to apply annotations for various validation rules, such as string length, numeric values, and format constraints like URLs and UUIDs. This functionality makes it suitable for a wide array of applications in OCaml development where data integrity is crucial.")
  (depends (ocaml (= "5.1.0")) dune (alcotest :with-test) ppx_deriving re uri)
  (tags

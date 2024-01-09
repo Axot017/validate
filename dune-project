@@ -13,7 +13,7 @@
 
 (license MIT)
 
-(documentation https://axot017.github.com/validate/)
+(documentation https://axot017.github.io/validate/)
 
 (package
  (name validate)

@@ -9,7 +9,7 @@ authors: ["Mateusz Ledwoń <mateuszledwon@duck.com>"]
 license: "MIT"
 tags: ["validation" "ppx"]
 homepage: "https://github.com/Axot017/validate"
-doc: "https://axot017.github.com/validate/"
+doc: "https://axot017.github.io/validate/"
 bug-reports: "https://github.com/Axot017/validate/issues"
 depends: [
   "ocaml" {= "5.1.0"}

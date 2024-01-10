@@ -38,6 +38,7 @@ type test_record = {
   module_test_record : Test.t; [@dive]
   other_test_record_list : other_test_record list; [@dive] [@list_min_length 2]
   email : string; [@email]
+  regex : string; [@regex "^test[a-z]+$"]
 }
 [@@deriving validate, show, eq]
 
@@ -76,6 +77,7 @@ let test_err () =
         module_test_record = { Test.min_module = "1" };
         other_test_record_list = [ { other_min = "1" } ];
         email = "invalid email";
+        regex = "invalid regex";
       }
   in
   Alcotest.(check (result test_record_testable validation_error_testable))
@@ -83,6 +85,9 @@ let test_err () =
     (Error
        (Validate.RecordError
           [
+            ( "regex",
+              [ Validate.BaseError { code = "invalid_pattern"; params = [] } ]
+            );
             ( "email",
               [ Validate.BaseError { code = "invalid_email"; params = [] } ] );
             ( "other_test_record_list",
@@ -304,6 +309,7 @@ let test_ok () =
       module_test_record = { Test.min_module = "12" };
       other_test_record_list = [ { other_min = "12" }; { other_min = "12" } ];
       email = "example@gmail.com";
+      regex = "testa";
     }
   in
   let result = validate_test_record r in

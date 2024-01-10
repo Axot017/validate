@@ -21,6 +21,7 @@ let greater_than_or_equal = "greater_than_or_equal"
 let equal_to = "equal_to"
 let not_equal_to = "not_equal_to"
 let email = "email"
+let regex = "regex"
 let list_min_length_key = "list_min_length"
 let list_max_length_key = "list_max_length"
 let dive = "dive"
@@ -47,6 +48,7 @@ type validator =
   | EqualTo of number
   | NotEqualTo of number
   | Email
+  | Regex of string
 [@@deriving show]
 
 and number = Int of int | Float of float [@@deriving show]
@@ -71,6 +73,7 @@ let string_of_validator = function
   | EqualTo _ -> equal_to
   | NotEqualTo _ -> not_equal_to
   | Email -> email
+  | Regex _ -> regex
 
 let process_numeric_attribute ?loc = function
   | Pconst_integer (i, _) -> Int (int_of_string i)
@@ -87,6 +90,13 @@ let int_attrribute name =
     Printf.(sprintf "ppx_derive_validator.%s" name)
     Attribute.Context.label_declaration
     Ast_pattern.(single_expr_payload (eint __))
+    (fun x -> x)
+
+let string_attrribute name =
+  Attribute.declare
+    Printf.(sprintf "ppx_derive_validator.%s" name)
+    Attribute.Context.label_declaration
+    Ast_pattern.(single_expr_payload (estring __))
     (fun x -> x)
 
 let unit_attribute name =
@@ -117,6 +127,7 @@ let list_min_length_attribute = int_attrribute list_min_length_key
 let list_max_length_attribute = int_attrribute list_max_length_key
 let dive_attribute = unit_attribute dive
 let email_attribute = unit_attribute email
+let regex_attribute = string_attrribute regex
 
 let extract_list_validators (ld : label_declaration) =
   [
@@ -154,6 +165,7 @@ let extract_validators (ld : label_declaration) =
     Attribute.get not_equal_to_attribute ld
     |> Option.map (fun x -> NotEqualTo x);
     Attribute.get email_attribute ld |> Option.map (fun _ -> Email);
+    Attribute.get regex_attribute ld |> Option.map (fun x -> Regex x);
   ]
   |> List.filter_map (fun x -> x)
 
@@ -216,6 +228,10 @@ let uppercase_validator_exp record_field =
 let uppercase_alphanumeric_validator_exp record_field =
   validator_exp_template "validate_uppercase_alphanumeric" ~loc:record_field.loc
     []
+
+let regex_validator_exp regex record_field =
+  validator_exp_template "validate_str_regex" ~loc:record_field.loc
+    [ (Nolabel, Exp.constant (Pconst_string (regex, record_field.loc, None))) ]
 
 let number_to_exp = function
   | Int i -> Exp.constant (Pconst_integer (string_of_int i, None))
@@ -298,7 +314,8 @@ let rec validator_exp record_field validator =
           greater_than_or_equal_validator_exp number record_field
       | EqualTo number -> equal_to_validator_exp number record_field
       | NotEqualTo number -> not_equal_to_validator_exp number record_field
-      | Email -> email_validator_exp record_field)
+      | Email -> email_validator_exp record_field
+      | Regex regex -> regex_validator_exp regex record_field)
   | Option inner_record_field_type ->
       option_validator_exp record_field
         (validator_exp

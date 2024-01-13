@@ -1,19 +1,16 @@
 open Ppxlib
 
-type record_field = {
-  name : string;
-  field_type : record_field_type;
-  loc : Location.t;
-}
+type record_field = { name : string; loc_type : loc_type }
+and loc_type = { loc : Location.t; typ : simple_type }
 
-and record_field_type =
+and simple_type =
   | Bool
   | Int
   | Float
   | String
-  | Option of record_field_type
+  | Option of simple_type
   | Other of longident
-  | List of record_field_type
+  | List of simple_type
 
 let rec extract_field_type label_loc (t : core_type) =
   let field_type =
@@ -31,7 +28,10 @@ let rec extract_field_type label_loc (t : core_type) =
   in
   field_type
 
+let extract_loc_type (t : core_type) =
+  { loc = t.ptyp_loc; typ = extract_field_type t.ptyp_loc t }
+
 let extract_record_field (ld : label_declaration) =
-  let field_type = extract_field_type ld.pld_name.loc ld.pld_type in
-  let record_field = { name = ld.pld_name.txt; field_type; loc = ld.pld_loc } in
-  record_field
+  let name = ld.pld_name.txt in
+  let loc_type = extract_loc_type ld.pld_type in
+  { name; loc_type }

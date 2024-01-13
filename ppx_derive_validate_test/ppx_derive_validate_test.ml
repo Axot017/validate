@@ -11,6 +11,8 @@ let _ = Test.show
 type other_test_record = { other_min : string [@min_length 2] }
 [@@deriving validate, show, eq]
 
+(* type tt = (string list[@min_length 1]) [@@deriving validate] *)
+
 type test_record = {
   min : string; [@min_length 2]
   max : string; [@max_length 5]

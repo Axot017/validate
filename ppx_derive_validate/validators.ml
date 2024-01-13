@@ -170,7 +170,7 @@ let extract_validators (ld : label_declaration) =
   |> List.filter_map (fun x -> x)
 
 let length_ident f =
-  match f.field_type with
+  match f.typ with
   | String ->
       Exp.(ident { txt = Ldot (Lident "String", "length"); loc = f.loc })
   | List _ -> Exp.(ident { txt = Ldot (Lident "List", "length"); loc = f.loc })
@@ -290,7 +290,7 @@ let email_validator_exp record_field =
   validator_exp_template "validate_email" ~loc:record_field.loc []
 
 let rec validator_exp record_field validator =
-  match record_field.field_type with
+  match record_field.typ with
   | Bool | Int | Float | String -> (
       match validator with
       | MaxLength max -> max_length_validator_exp max record_field
@@ -319,17 +319,17 @@ let rec validator_exp record_field validator =
   | Option inner_record_field_type ->
       option_validator_exp record_field
         (validator_exp
-           { record_field with field_type = inner_record_field_type }
+           { record_field with typ = inner_record_field_type }
            validator)
   | _ -> Location.raise_errorf ~loc:record_field.loc "Something went wrong"
 
 let field_extractor_exp f =
   let open Exp in
   fun_ Nolabel None
-    (Pat.var { txt = "x"; loc = f.loc })
+    (Pat.var { txt = "x"; loc = f.loc_type.loc })
     (field
-       (ident { txt = Lident "x"; loc = f.loc })
-       { txt = Lident f.name; loc = f.loc })
+       (ident { txt = Lident "x"; loc = f.loc_type.loc })
+       { txt = Lident f.name; loc = f.loc_type.loc })
 
 let list_validator_exp ~loc inner =
   let open Exp in
@@ -371,7 +371,7 @@ let call_other_type_validator_exp ~loc type_name =
   ident { txt; loc }
 
 let rec field_validators_list_exp f (ld : label_declaration) =
-  match f.field_type with
+  match f.typ with
   | List t ->
       let list_validators =
         extract_list_validators ld |> List.map (list_specific_validator_exp f)
@@ -380,7 +380,7 @@ let rec field_validators_list_exp f (ld : label_declaration) =
         (list_validators
         @ [
             list_validator_exp ~loc:f.loc
-            @@ field_validators_list_exp { f with field_type = t } ld;
+            @@ field_validators_list_exp { f with typ = t } ld;
           ])
   | Other type_name ->
       let divable = Attribute.get dive_attribute ld |> Option.is_some in
@@ -401,9 +401,9 @@ let field_validator_exp (ld : label_declaration) =
   let open Exp in
   let f = extract_record_field ld in
   apply
-    (ident { txt = Ldot (Lident "Validate", "field"); loc = f.loc })
+    (ident { txt = Ldot (Lident "Validate", "field"); loc = f.loc_type.loc })
     [
-      (Nolabel, constant (Pconst_string (f.name, f.loc, None)));
+      (Nolabel, constant (Pconst_string (f.name, f.loc_type.loc, None)));
       (Nolabel, field_extractor_exp f);
-      (Nolabel, field_validators_list_exp f ld);
+      (Nolabel, field_validators_list_exp f.loc_type ld);
     ]

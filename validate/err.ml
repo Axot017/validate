@@ -39,4 +39,5 @@ and validation_error =
   | BaseError of base_validation_error
   | RecordError of field_validation_error list
   | IterableError of index_validation_error list
+  | GroupError of validation_error list
 [@@deriving show, eq]

@@ -71,3 +71,16 @@ let option (validator : 'a validator) : 'a option validator = function
 let ignore_ok f v =
   let result = f v in
   match result with Ok _ -> Ok () | Error _ as error -> error
+
+let group (validators : 'a validator list) value =
+  let rec validate validators errors =
+    match validators with
+    | [] -> errors
+    | validator :: rest -> (
+        match validator value with
+        | Ok _ -> validate rest errors
+        | Error error -> validate rest (error :: errors))
+  in
+  match validate validators [] with
+  | [] -> Ok ()
+  | errors -> Error (GroupError errors)

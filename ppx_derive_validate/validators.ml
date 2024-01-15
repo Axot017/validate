@@ -22,12 +22,7 @@ let equal_to = "equal_to"
 let not_equal_to = "not_equal_to"
 let email = "email"
 let regex = "regex"
-let list_min_length_key = "list_min_length"
-let list_max_length_key = "list_max_length"
 let dive = "dive"
-
-type list_validator = ListMinLength of int | ListMaxLength of int
-[@@deriving show]
 
 type validator =
   | MinLength of int
@@ -110,25 +105,6 @@ let unit_attribute name context =
 
 let dive_attribute_ld = unit_attribute dive Attribute.Context.label_declaration
 let dive_attribute_ct = unit_attribute dive Attribute.Context.core_type
-
-let list_validators_extractor context =
-  let list_min_length_attribute = int_attrribute list_min_length_key context in
-  let list_max_length_attribute = int_attrribute list_max_length_key context in
-
-  fun item ->
-    [
-      Attribute.get list_min_length_attribute item
-      |> Option.map (fun x -> ListMinLength x);
-      Attribute.get list_max_length_attribute item
-      |> Option.map (fun x -> ListMaxLength x);
-    ]
-    |> List.filter_map (fun x -> x)
-
-let extract_record_list_validators =
-  list_validators_extractor Attribute.Context.label_declaration
-
-let extract_core_type_list_validators =
-  list_validators_extractor Attribute.Context.core_type
 
 let validators_extractor context =
   let min_length_attribute = int_attrribute min_length_key context in
@@ -320,7 +296,7 @@ let email_validator_exp record_field =
 
 let rec validator_exp record_field validator =
   match record_field.typ with
-  | Bool | Int | Float | String -> (
+  | Bool | Int | Float | String | List _ -> (
       match validator with
       | MaxLength max -> max_length_validator_exp max record_field
       | MinLength min -> min_length_validator_exp min record_field
@@ -345,7 +321,7 @@ let rec validator_exp record_field validator =
       | NotEqualTo number -> not_equal_to_validator_exp number record_field
       | Email -> email_validator_exp record_field
       | Regex regex -> regex_validator_exp regex record_field)
-  | Option inner_record_field_type ->
+  | Option (inner_record_field_type, _) ->
       option_validator_exp record_field
         (validator_exp
            { record_field with typ = inner_record_field_type }
@@ -366,21 +342,6 @@ let list_validator_exp ~loc inner =
     (ident { txt = Ldot (Lident "Validate", "list"); loc })
     [ (Nolabel, inner) ]
 
-let list_specific_validator_exp record_field list_validator =
-  match list_validator with
-  | ListMinLength min ->
-      validator_exp_template "validate_min_length" ~loc:record_field.loc
-        [
-          (Nolabel, length_ident record_field);
-          (Nolabel, Exp.constant (Pconst_integer (string_of_int min, None)));
-        ]
-  | ListMaxLength max ->
-      validator_exp_template "validate_max_length" ~loc:record_field.loc
-        [
-          (Nolabel, length_ident record_field);
-          (Nolabel, Exp.constant (Pconst_integer (string_of_int max, None)));
-        ]
-
 let ignored_exp ~loc inner =
   let open Exp in
   apply
@@ -399,33 +360,33 @@ let call_other_type_validator_exp ~loc type_name =
 
   ident { txt; loc }
 
-let rec validators_list_exp ~extract_validators ~extract_list_validators
-    ~divable f ld =
-  match f.typ with
-  | List t ->
-      let list_validators =
-        extract_list_validators ld |> List.map (list_specific_validator_exp f)
-      in
-      expr_list f.loc
+let rec validators_list_exp ~validators ~divable loc_type =
+  match loc_type.typ with
+  | List (t, inner_type) ->
+      let list_validators = validators |> List.map (validator_exp loc_type) in
+      expr_list loc_type.loc
         (list_validators
         @ [
-            list_validator_exp ~loc:f.loc
-            @@ validators_list_exp ~extract_validators ~extract_list_validators
-                 ~divable { f with typ = t } ld;
+            list_validator_exp ~loc:loc_type.loc
+            @@ validators_list_exp
+                 ~validators:(extract_core_type_validators inner_type)
+                 ~divable:
+                   (Attribute.get dive_attribute_ct inner_type |> Option.is_some)
+                 { loc_type with typ = t };
           ])
   | Other type_name ->
       if divable then
-        expr_list f.loc
+        expr_list loc_type.loc
           [
-            ignored_exp ~loc:f.loc
-            @@ call_other_type_validator_exp ~loc:f.loc type_name;
+            ignored_exp ~loc:loc_type.loc
+            @@ call_other_type_validator_exp ~loc:loc_type.loc type_name;
           ]
-      else expr_list f.loc []
+      else expr_list loc_type.loc []
   | _ ->
-      let generator = validator_exp f in
-      let validators = extract_validators ld in
+      let generator = validator_exp loc_type in
+      let validators = validators in
       let exps = validators |> List.map generator in
-      expr_list f.loc exps
+      expr_list loc_type.loc exps
 
 let field_validator_exp (ld : label_declaration) =
   let open Exp in
@@ -436,10 +397,10 @@ let field_validator_exp (ld : label_declaration) =
       (Nolabel, constant (Pconst_string (f.name, f.loc_type.loc, None)));
       (Nolabel, field_extractor_exp f);
       ( Nolabel,
-        validators_list_exp ~extract_validators:extract_field_validators
-          ~extract_list_validators:extract_record_list_validators
+        validators_list_exp
+          ~validators:(extract_field_validators ld)
           ~divable:(Attribute.get dive_attribute_ld ld |> Option.is_some)
-          f.loc_type ld );
+          f.loc_type );
     ]
 
 let type_validator_exp (ct : core_type) =
@@ -449,8 +410,8 @@ let type_validator_exp (ct : core_type) =
     (ident { txt = Ldot (Lident "Validate", "group"); loc = f.loc })
     [
       ( Nolabel,
-        validators_list_exp ~extract_validators:extract_core_type_validators
-          ~extract_list_validators:extract_core_type_list_validators
+        validators_list_exp
+          ~validators:(extract_core_type_validators ct)
           ~divable:(Attribute.get dive_attribute_ct ct |> Option.is_some)
-          f ct );
+          f );
     ]

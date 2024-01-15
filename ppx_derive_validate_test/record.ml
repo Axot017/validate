@@ -31,14 +31,16 @@ type test_record = {
   not_equal_to : int; [@not_equal_to 10]
   option_some : string option; [@min_length 2]
   option_none : string option; [@min_length 2]
-  test_list : string list; [@min_length 2]
-  list_min_length : string list; [@list_min_length 3] [@min_length 1]
-  list_max_length : string list; [@list_max_length 5] [@max_length 3]
+  test_list : (string[@min_length 2]) list;
+  list_min_length : (string[@min_length 1]) list; [@min_length 3]
+  list_max_length : (string[@max_length 3]) list; [@max_length 5]
   other_test_record : other_test_record; [@dive]
   module_test_record : Test.t; [@dive]
-  other_test_record_list : other_test_record list; [@dive] [@list_min_length 2]
+  other_test_record_list : (other_test_record[@dive]) list; [@min_length 2]
   email : string; [@email]
   regex : string; [@regex "^test[a-z]+$"]
+  nested_list : ((string[@max_length 1]) list[@max_length 1]) list;
+      [@max_length 1]
 }
 [@@deriving validate, show, eq]
 
@@ -75,6 +77,8 @@ let test_err () =
         other_test_record_list = [ { other_min = "1" } ];
         email = "invalid email";
         regex = "invalid regex";
+        nested_list =
+          [ [ "111"; "2" ]; [ "12" ]; [ "1" ]; [ "111"; "fffff"; "123" ] ];
       }
   in
   Alcotest.(check (result test_record_testable Error.validation_error_testable))
@@ -82,6 +86,82 @@ let test_err () =
     (Error
        (Validate.RecordError
           [
+            ( "nested_list",
+              [
+                Validate.IterableError
+                  [
+                    ( 3,
+                      [
+                        Validate.IterableError
+                          [
+                            ( 2,
+                              [
+                                Validate.BaseError
+                                  {
+                                    code = "max_length";
+                                    params = [ ("threshold", "1") ];
+                                  };
+                              ] );
+                            ( 1,
+                              [
+                                Validate.BaseError
+                                  {
+                                    code = "max_length";
+                                    params = [ ("threshold", "1") ];
+                                  };
+                              ] );
+                            ( 0,
+                              [
+                                Validate.BaseError
+                                  {
+                                    code = "max_length";
+                                    params = [ ("threshold", "1") ];
+                                  };
+                              ] );
+                          ];
+                        Validate.BaseError
+                          {
+                            code = "max_length";
+                            params = [ ("threshold", "1") ];
+                          };
+                      ] );
+                    ( 1,
+                      [
+                        Validate.IterableError
+                          [
+                            ( 0,
+                              [
+                                Validate.BaseError
+                                  {
+                                    code = "max_length";
+                                    params = [ ("threshold", "1") ];
+                                  };
+                              ] );
+                          ];
+                      ] );
+                    ( 0,
+                      [
+                        Validate.IterableError
+                          [
+                            ( 0,
+                              [
+                                Validate.BaseError
+                                  {
+                                    code = "max_length";
+                                    params = [ ("threshold", "1") ];
+                                  };
+                              ] );
+                          ];
+                        Validate.BaseError
+                          {
+                            code = "max_length";
+                            params = [ ("threshold", "1") ];
+                          };
+                      ] );
+                  ];
+                Validate.BaseError
+                  { code = "max_length"; params = [ ("threshold", "1") ] };
+              ] );
             ( "regex",
               [ Validate.BaseError { code = "invalid_pattern"; params = [] } ]
             );
@@ -307,6 +387,7 @@ let test_ok () =
       other_test_record_list = [ { other_min = "12" }; { other_min = "12" } ];
       email = "example@gmail.com";
       regex = "testa";
+      nested_list = [ [ "1" ] ];
     }
   in
   let result = validate_test_record r in

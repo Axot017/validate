@@ -382,6 +382,16 @@ let rec validators_list_exp ~validators ~divable loc_type =
             @@ call_other_type_validator_exp ~loc:loc_type.loc type_name;
           ]
       else expr_list loc_type.loc []
+  | Tuple types ->
+      let args_count = List.length types in
+      let pattern =
+        Pat.tuple
+          (List.init args_count (fun i ->
+               Pat.var { txt = Printf.sprintf "x%d" i; loc = loc_type.loc }))
+      in
+
+      let f = Exp.fun_ Nolabel None pattern in
+      Location.raise_errorf ~loc:loc_type.loc "Unsupported type"
   | _ ->
       let generator = validator_exp loc_type in
       let validators = validators in

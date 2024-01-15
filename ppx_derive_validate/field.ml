@@ -8,9 +8,9 @@ and simple_type =
   | Int
   | Float
   | String
-  | Option of simple_type
+  | Option of (simple_type * core_type)
   | Other of longident
-  | List of simple_type
+  | List of (simple_type * core_type)
 
 let rec extract_field_type label_loc (t : core_type) =
   let field_type =
@@ -20,9 +20,9 @@ let rec extract_field_type label_loc (t : core_type) =
     | Ptyp_constr ({ txt = Lident "bool"; _ }, []) -> Bool
     | Ptyp_constr ({ txt = Lident "float"; _ }, []) -> Float
     | Ptyp_constr ({ txt = Lident "option"; _ }, [ arg ]) ->
-        Option (extract_field_type label_loc arg)
+        Option (extract_field_type label_loc arg, arg)
     | Ptyp_constr ({ txt = Lident "list"; _ }, [ arg ]) ->
-        List (extract_field_type label_loc arg)
+        List (extract_field_type label_loc arg, arg)
     | Ptyp_constr ({ txt = name; _ }, []) -> Other name
     | _ -> Location.raise_errorf ~loc:label_loc "Unsupported type"
   in

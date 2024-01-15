@@ -16,7 +16,7 @@ let test_simple_string_error () =
           [ Validate.BaseError { code = "invalid_email"; params = [] } ]))
     result
 
-type list_type = (string list[@list_min_length 2] [@min_length 1])
+type list_type = ((string[@min_length 1]) list[@min_length 2])
 [@@deriving validate]
 
 let test_list_type_ok () =

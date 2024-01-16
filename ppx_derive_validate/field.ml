@@ -11,6 +11,7 @@ and simple_type =
   | Option of (simple_type * core_type)
   | Other of longident
   | List of (simple_type * core_type)
+  | Tuple of (simple_type * core_type) list
 
 let rec extract_field_type label_loc (t : core_type) =
   let field_type =
@@ -24,6 +25,13 @@ let rec extract_field_type label_loc (t : core_type) =
     | Ptyp_constr ({ txt = Lident "list"; _ }, [ arg ]) ->
         List (extract_field_type label_loc arg, arg)
     | Ptyp_constr ({ txt = name; _ }, []) -> Other name
+    | Ptyp_tuple inner_types ->
+        Tuple
+          (List.map
+             (fun t ->
+               let field_type = extract_field_type label_loc t in
+               (field_type, t))
+             inner_types)
     | _ -> Location.raise_errorf ~loc:label_loc "Unsupported type"
   in
   field_type

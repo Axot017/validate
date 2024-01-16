@@ -389,9 +389,46 @@ let rec validators_list_exp ~validators ~divable loc_type =
           (List.init args_count (fun i ->
                Pat.var { txt = Printf.sprintf "x%d" i; loc = loc_type.loc }))
       in
+      let indexes = List.init args_count (fun i -> i) in
+      let indexed_types = List.combine indexes types in
+      let types_validators_exps =
+        indexed_types
+        |> List.map (fun (i, (t, ct)) ->
+               Exp.(
+                 apply
+                   (ident
+                      {
+                        txt = Ldot (Lident "Validate", "field");
+                        loc = ct.ptyp_loc;
+                      })
+                   [
+                     ( Nolabel,
+                       constant
+                         (Pconst_string (string_of_int i, ct.ptyp_loc, None)) );
+                     ( Nolabel,
+                       fun_ Nolabel None pattern
+                         (ident
+                            {
+                              txt = Lident (Printf.sprintf "x%d" i);
+                              loc = loc_type.loc;
+                            }) );
+                     ( Nolabel,
+                       validators_list_exp
+                         ~validators:(extract_core_type_validators ct)
+                         ~divable:
+                           (Attribute.get dive_attribute_ct ct |> Option.is_some)
+                         { loc_type with typ = t } );
+                   ]))
+      in
+      let body =
+        Exp.(
+          apply
+            (ident
+               { txt = Ldot (Lident "Validate", "record"); loc = loc_type.loc })
+            [ (Nolabel, expr_list loc_type.loc types_validators_exps) ])
+      in
 
-      let f = Exp.fun_ Nolabel None pattern in
-      Location.raise_errorf ~loc:loc_type.loc "Unsupported type"
+      expr_list loc_type.loc [ body ]
   | _ ->
       let generator = validator_exp loc_type in
       let validators = validators in

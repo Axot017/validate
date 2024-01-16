@@ -25,9 +25,9 @@ let _validate_regex code regex str =
 let validate_regex regex str =
   _validate_regex invalid_pattern_error_code regex str
 
-let validate_str_regex regex str =
+let validate_str_regex regex =
   let compiled_regex = Re.Perl.re regex |> Re.compile in
-  validate_regex compiled_regex str
+  fun str -> validate_regex compiled_regex str
 
 let validate_uuid uuid = _validate_regex invalid_uuid_error_code uuid_regex uuid
 

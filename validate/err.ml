@@ -30,14 +30,14 @@ let invalid_url_error_code = "invalid_url"
 type base_validation_error = { code : string; params : (string * string) list }
 [@@deriving show, eq]
 
-and field_validation_error = string * validation_error list
+and keyed_validation_errors = string * validation_error list
 [@@deriving show, eq]
 
 and index_validation_error = int * validation_error list [@@deriving show, eq]
 
 and validation_error =
   | BaseError of base_validation_error
-  | RecordError of field_validation_error list
+  | KeyedError of keyed_validation_errors list
   | IterableError of index_validation_error list
   | GroupError of validation_error list
 [@@deriving show, eq]

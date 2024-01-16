@@ -84,7 +84,7 @@ let test_err () =
   Alcotest.(check (result test_record_testable Error.validation_error_testable))
     "returns Error"
     (Error
-       (Validate.RecordError
+       (Validate.KeyedError
           [
             ( "nested_list",
               [
@@ -173,7 +173,7 @@ let test_err () =
                   [
                     ( 0,
                       [
-                        Validate.RecordError
+                        Validate.KeyedError
                           [
                             ( "other_min",
                               [
@@ -191,7 +191,7 @@ let test_err () =
               ] );
             ( "module_test_record",
               [
-                Validate.RecordError
+                Validate.KeyedError
                   [
                     ( "min_module",
                       [
@@ -205,7 +205,7 @@ let test_err () =
               ] );
             ( "other_test_record",
               [
-                Validate.RecordError
+                Validate.KeyedError
                   [
                     ( "other_min",
                       [

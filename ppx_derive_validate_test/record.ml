@@ -12,8 +12,9 @@ type other_test_record = { other_min : string [@min_length 2] }
 [@@deriving validate, show, eq]
 
 type test_record = {
-  min : string; [@min_length 2]
+  min : (string[@min_length 2]);
   max : string; [@max_length 5]
+  equals : string; [@length_equals 5]
   url : string; [@url]
   uuid : string; [@uuid]
   numeric : string; [@numeric]
@@ -52,6 +53,7 @@ let test_err () =
       {
         min = "1";
         max = "123456";
+        equals = "123456";
         url = "invalid url";
         uuid = "invalid uuid";
         numeric = "123a";
@@ -344,6 +346,11 @@ let test_err () =
             ( "uuid",
               [ Validate.BaseError { code = "invalid_uuid"; params = [] } ] );
             ("url", [ Validate.BaseError { code = "invalid_url"; params = [] } ]);
+            ( "equals",
+              [
+                Validate.BaseError
+                  { code = "length_equals"; params = [ ("value", "5") ] };
+              ] );
             ( "max",
               [
                 Validate.BaseError
@@ -362,6 +369,7 @@ let test_ok () =
     {
       min = "12";
       max = "12345";
+      equals = "12345";
       url = "https://www.google.com";
       uuid = "123e4567-e89b-12d3-a456-426614174000";
       numeric = "123";

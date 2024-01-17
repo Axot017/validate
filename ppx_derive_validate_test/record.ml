@@ -90,10 +90,17 @@ let test_err () =
           [
             ( "nested_list",
               [
+                Validate.BaseError
+                  { code = "max_length"; params = [ ("threshold", "1") ] };
                 Validate.IterableError
                   [
                     ( 3,
                       [
+                        Validate.BaseError
+                          {
+                            code = "max_length";
+                            params = [ ("threshold", "1") ];
+                          };
                         Validate.IterableError
                           [
                             ( 2,
@@ -121,11 +128,6 @@ let test_err () =
                                   };
                               ] );
                           ];
-                        Validate.BaseError
-                          {
-                            code = "max_length";
-                            params = [ ("threshold", "1") ];
-                          };
                       ] );
                     ( 1,
                       [
@@ -143,6 +145,11 @@ let test_err () =
                       ] );
                     ( 0,
                       [
+                        Validate.BaseError
+                          {
+                            code = "max_length";
+                            params = [ ("threshold", "1") ];
+                          };
                         Validate.IterableError
                           [
                             ( 0,
@@ -154,15 +161,8 @@ let test_err () =
                                   };
                               ] );
                           ];
-                        Validate.BaseError
-                          {
-                            code = "max_length";
-                            params = [ ("threshold", "1") ];
-                          };
                       ] );
                   ];
-                Validate.BaseError
-                  { code = "max_length"; params = [ ("threshold", "1") ] };
               ] );
             ( "regex",
               [ Validate.BaseError { code = "invalid_pattern"; params = [] } ]
@@ -171,6 +171,8 @@ let test_err () =
               [ Validate.BaseError { code = "invalid_email"; params = [] } ] );
             ( "other_test_record_list",
               [
+                Validate.BaseError
+                  { code = "min_length"; params = [ ("threshold", "2") ] };
                 Validate.IterableError
                   [
                     ( 0,
@@ -188,8 +190,6 @@ let test_err () =
                           ];
                       ] );
                   ];
-                Validate.BaseError
-                  { code = "min_length"; params = [ ("threshold", "2") ] };
               ] );
             ( "module_test_record",
               [
@@ -221,6 +221,8 @@ let test_err () =
               ] );
             ( "list_max_length",
               [
+                Validate.BaseError
+                  { code = "max_length"; params = [ ("threshold", "5") ] };
                 Validate.IterableError
                   [
                     ( 5,
@@ -232,11 +234,11 @@ let test_err () =
                           };
                       ] );
                   ];
-                Validate.BaseError
-                  { code = "max_length"; params = [ ("threshold", "5") ] };
               ] );
             ( "list_min_length",
               [
+                Validate.BaseError
+                  { code = "min_length"; params = [ ("threshold", "3") ] };
                 Validate.IterableError
                   [
                     ( 0,
@@ -248,8 +250,6 @@ let test_err () =
                           };
                       ] );
                   ];
-                Validate.BaseError
-                  { code = "min_length"; params = [ ("threshold", "3") ] };
               ] );
             ( "test_list",
               [

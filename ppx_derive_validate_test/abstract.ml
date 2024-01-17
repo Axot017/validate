@@ -33,6 +33,8 @@ let test_list_type_error () =
     (Error
        (Validate.GroupError
           [
+            Validate.BaseError
+              { code = "min_length"; params = [ ("threshold", "2") ] };
             Validate.IterableError
               [
                 ( 0,
@@ -41,8 +43,6 @@ let test_list_type_error () =
                       { code = "min_length"; params = [ ("threshold", "1") ] };
                   ] );
               ];
-            Validate.BaseError
-              { code = "min_length"; params = [ ("threshold", "2") ] };
           ]))
     result
 

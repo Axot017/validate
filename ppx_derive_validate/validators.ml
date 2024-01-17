@@ -378,16 +378,16 @@ let rec validators_list_exp ~validators ~divable loc_type =
   match loc_type.typ with
   | List (t, inner_type) ->
       let list_validators = validators |> List.map (validator_exp loc_type) in
-      expr_list loc_type.loc
-        (list_validators
-        @ [
-            list_validator_exp ~loc:loc_type.loc
-            @@ validators_list_exp
-                 ~validators:(extract_core_type_validators inner_type)
-                 ~divable:
-                   (Attribute.get dive_attribute_ct inner_type |> Option.is_some)
-                 { loc_type with typ = t };
-          ])
+      let divable =
+        Attribute.get dive_attribute_ct inner_type |> Option.is_some
+      in
+      let validators = extract_core_type_validators inner_type in
+      let deep_validators_exp =
+        list_validator_exp ~loc:loc_type.loc
+        @@ validators_list_exp ~validators ~divable { loc_type with typ = t }
+      in
+      let all_validators = deep_validators_exp :: list_validators in
+      expr_list loc_type.loc all_validators
   | Other type_name ->
       if divable then
         expr_list loc_type.loc

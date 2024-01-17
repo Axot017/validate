@@ -14,7 +14,7 @@ let test_tuple_error () =
     (Error
        (Validate.GroupError
           [
-            Validate.RecordError
+            Validate.KeyedError
               [
                 ( "1",
                   [

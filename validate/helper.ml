@@ -2,7 +2,7 @@ open Err
 
 type 'a validator = 'a -> (unit, validation_error) result
 and ('a, 'b) field_extractor = 'a -> 'b
-and 'a field_validator = 'a -> (unit, field_validation_error) result
+and 'a field_validator = 'a -> (unit, keyed_validation_errors) result
 
 let validate (validator : 'a validator) (value : 'a) :
     ('a, validation_error) result =
@@ -10,7 +10,7 @@ let validate (validator : 'a validator) (value : 'a) :
 
 let field field_name (field_extractor : ('a, 'b) field_extractor)
     (validators : 'b validator list) record :
-    (unit, field_validation_error) result =
+    (unit, keyed_validation_errors) result =
   let value = field_extractor record in
   let rec validate validators errors =
     match validators with
@@ -34,7 +34,7 @@ let record (validators : 'a field_validator list) record :
         | Error error -> validate rest (error :: errors))
   in
   let errors = validate validators [] in
-  match errors with [] -> Ok () | errors -> Error (RecordError errors)
+  match errors with [] -> Ok () | errors -> Error (KeyedError errors)
 
 let iterable_item index (validators : 'a validator list) item :
     (unit, index_validation_error) result =

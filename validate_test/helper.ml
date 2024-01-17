@@ -20,7 +20,7 @@ let test_validate_record_error_simple () =
   Alcotest.(check (result unit validation_error_testable))
     "validate record"
     (Error
-       (Validate.RecordError
+       (Validate.KeyedError
           [
             ( "c",
               [
@@ -113,7 +113,7 @@ let test_validate_record_error_complex () =
   Alcotest.(check (result unit validation_error_testable))
     "validate record"
     (Error
-       (Validate.RecordError
+       (Validate.KeyedError
           [
             ( "x3",
               [
@@ -121,7 +121,7 @@ let test_validate_record_error_complex () =
                   [
                     ( 1,
                       [
-                        Validate.RecordError
+                        Validate.KeyedError
                           [
                             ( "y2",
                               [
@@ -143,7 +143,7 @@ let test_validate_record_error_complex () =
                       ] );
                     ( 0,
                       [
-                        Validate.RecordError
+                        Validate.KeyedError
                           [
                             ( "y2",
                               [
@@ -159,7 +159,7 @@ let test_validate_record_error_complex () =
               ] );
             ( "x2",
               [
-                Validate.RecordError
+                Validate.KeyedError
                   [
                     ( "y2",
                       [

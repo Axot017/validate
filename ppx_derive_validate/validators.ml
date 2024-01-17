@@ -5,6 +5,7 @@ open Utils
 
 let min_length_key = "min_length"
 let max_length_key = "max_length"
+let length_equals_key = "length_equals"
 let url_key = "url"
 let uuid_key = "uuid"
 let numeric_key = "numeric"
@@ -27,6 +28,7 @@ let dive = "dive"
 type validator =
   | MinLength of int
   | MaxLength of int
+  | LengthEquals of int
   | Url
   | Uuid
   | Numeric
@@ -52,6 +54,7 @@ and validators = validator list [@@deriving show]
 let string_of_validator = function
   | MinLength _ -> min_length_key
   | MaxLength _ -> max_length_key
+  | LengthEquals _ -> length_equals_key
   | Url -> url_key
   | Uuid -> uuid_key
   | Numeric -> numeric_key
@@ -109,6 +112,7 @@ let dive_attribute_ct = unit_attribute dive Attribute.Context.core_type
 let validators_extractor context =
   let min_length_attribute = int_attrribute min_length_key context in
   let max_length_attribute = int_attrribute max_length_key context in
+  let length_equals_attribute = int_attrribute length_equals_key context in
   let uri_attribute = unit_attribute url_key context in
   let uuid_attribute = unit_attribute uuid_key context in
   let numeric_attribute = unit_attribute numeric_key context in
@@ -141,6 +145,8 @@ let validators_extractor context =
       |> Option.map (fun x -> MinLength x);
       Attribute.get max_length_attribute item
       |> Option.map (fun x -> MaxLength x);
+      Attribute.get length_equals_attribute item
+      |> Option.map (fun x -> LengthEquals x);
       Attribute.get uri_attribute item |> Option.map (fun _ -> Url);
       Attribute.get uuid_attribute item |> Option.map (fun _ -> Uuid);
       Attribute.get numeric_attribute item |> Option.map (fun _ -> Numeric);
@@ -203,6 +209,13 @@ let min_length_validator_exp min record_field =
     [
       (Nolabel, length_ident record_field);
       (Nolabel, Exp.constant (Pconst_integer (string_of_int min, None)));
+    ]
+
+let length_equals_validator_exp length record_field =
+  validator_exp_template "validate_length_equals" ~loc:record_field.loc
+    [
+      (Nolabel, length_ident record_field);
+      (Nolabel, Exp.constant (Pconst_integer (string_of_int length, None)));
     ]
 
 let url_validator_exp record_field =
@@ -300,6 +313,7 @@ let rec validator_exp record_field validator =
       match validator with
       | MaxLength max -> max_length_validator_exp max record_field
       | MinLength min -> min_length_validator_exp min record_field
+      | LengthEquals length -> length_equals_validator_exp length record_field
       | Url -> url_validator_exp record_field
       | Uuid -> uuid_validator_exp record_field
       | Numeric -> numeric_validator_exp record_field
@@ -438,6 +452,10 @@ let rec validators_list_exp ~validators ~divable loc_type =
 let field_validator_exp (ld : label_declaration) =
   let open Exp in
   let f = extract_record_field ld in
+  let divable = Attribute.get dive_attribute_ld ld |> Option.is_some in
+  let divable_ct =
+    Attribute.get dive_attribute_ct ld.pld_type |> Option.is_some
+  in
   apply
     (ident { txt = Ldot (Lident "Validate", "field"); loc = f.loc_type.loc })
     [
@@ -445,9 +463,10 @@ let field_validator_exp (ld : label_declaration) =
       (Nolabel, field_extractor_exp f);
       ( Nolabel,
         validators_list_exp
-          ~validators:(extract_field_validators ld)
-          ~divable:(Attribute.get dive_attribute_ld ld |> Option.is_some)
-          f.loc_type );
+          ~validators:
+            (extract_field_validators ld
+            @ extract_core_type_validators ld.pld_type)
+          ~divable:(divable || divable_ct) f.loc_type );
     ]
 
 let type_validator_exp (ct : core_type) =

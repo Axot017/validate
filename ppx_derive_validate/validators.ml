@@ -1,7 +1,7 @@
 open Ppxlib
 open Ast_helper
 open Field
-open Utils
+open Exps
 
 let min_length_key = "min_length"
 let max_length_key = "max_length"
@@ -180,132 +180,102 @@ let extract_field_validators =
 let extract_core_type_validators =
   validators_extractor Attribute.Context.core_type
 
-let length_ident f =
-  match f.typ with
-  | String ->
-      Exp.(ident { txt = Ldot (Lident "String", "length"); loc = f.loc })
-  | List _ -> Exp.(ident { txt = Ldot (Lident "List", "length"); loc = f.loc })
-  | _ ->
-      Location.raise_errorf ~loc:f.loc "length is not supported for this type"
-
-let validator_exp_template ~loc validator_name params =
-  let open Exp in
-  match params with
-  | [] -> ident { txt = Ldot (Lident "Validate", validator_name); loc }
-  | _ ->
-      apply
-        (ident { txt = Ldot (Lident "Validate", validator_name); loc })
-        params
-
 let max_length_validator_exp max record_field =
-  validator_exp_template "validate_max_length" ~loc:record_field.loc
-    [
-      (Nolabel, length_ident record_field);
-      (Nolabel, Exp.constant (Pconst_integer (string_of_int max, None)));
-    ]
+  validate_func_exp "validate_max_length" ~loc:record_field.loc
+    [ (Nolabel, length_exp record_field); (Nolabel, int_exp max) ]
 
 let min_length_validator_exp min record_field =
-  validator_exp_template "validate_min_length" ~loc:record_field.loc
-    [
-      (Nolabel, length_ident record_field);
-      (Nolabel, Exp.constant (Pconst_integer (string_of_int min, None)));
-    ]
+  validate_func_exp "validate_min_length" ~loc:record_field.loc
+    [ (Nolabel, length_exp record_field); (Nolabel, int_exp min) ]
 
 let length_equals_validator_exp length record_field =
-  validator_exp_template "validate_length_equals" ~loc:record_field.loc
-    [
-      (Nolabel, length_ident record_field);
-      (Nolabel, Exp.constant (Pconst_integer (string_of_int length, None)));
-    ]
+  validate_func_exp "validate_length_equals" ~loc:record_field.loc
+    [ (Nolabel, length_exp record_field); (Nolabel, int_exp length) ]
 
 let url_validator_exp record_field =
-  validator_exp_template "validate_url" ~loc:record_field.loc []
+  validate_func_exp "validate_url" ~loc:record_field.loc []
 
 let uuid_validator_exp record_field =
-  validator_exp_template "validate_uuid" ~loc:record_field.loc []
+  validate_func_exp "validate_uuid" ~loc:record_field.loc []
 
 let numeric_validator_exp record_field =
-  validator_exp_template "validate_numeric" ~loc:record_field.loc []
+  validate_func_exp "validate_numeric" ~loc:record_field.loc []
 
 let alpha_validator_exp record_field =
-  validator_exp_template "validate_alpha" ~loc:record_field.loc []
+  validate_func_exp "validate_alpha" ~loc:record_field.loc []
 
 let alphanumeric_validator_exp record_field =
-  validator_exp_template "validate_alphanumeric" ~loc:record_field.loc []
+  validate_func_exp "validate_alphanumeric" ~loc:record_field.loc []
 
 let lowercase_validator_exp record_field =
-  validator_exp_template "validate_lowercase" ~loc:record_field.loc []
+  validate_func_exp "validate_lowercase" ~loc:record_field.loc []
 
 let lowercase_alphanumeric_validator_exp record_field =
-  validator_exp_template "validate_lowercase_alphanumeric" ~loc:record_field.loc
-    []
+  validate_func_exp "validate_lowercase_alphanumeric" ~loc:record_field.loc []
 
 let uppercase_validator_exp record_field =
-  validator_exp_template "validate_uppercase" ~loc:record_field.loc []
+  validate_func_exp "validate_uppercase" ~loc:record_field.loc []
 
 let uppercase_alphanumeric_validator_exp record_field =
-  validator_exp_template "validate_uppercase_alphanumeric" ~loc:record_field.loc
-    []
+  validate_func_exp "validate_uppercase_alphanumeric" ~loc:record_field.loc []
 
 let regex_validator_exp regex record_field =
-  validator_exp_template "validate_str_regex" ~loc:record_field.loc
+  validate_func_exp "validate_str_regex" ~loc:record_field.loc
     [ (Nolabel, Exp.constant (Pconst_string (regex, record_field.loc, None))) ]
 
-let number_to_exp = function
-  | Int i -> Exp.constant (Pconst_integer (string_of_int i, None))
-  | Float f -> Exp.constant (Pconst_float (string_of_float f, None))
+let number_to_exp = function Int i -> int_exp i | Float f -> float_exp f
 
 let number_to_str_exp ~loc = function
-  | Int _ -> Exp.ident { txt = Lident "string_of_int"; loc }
-  | Float _ -> Exp.ident { txt = Lident "string_of_float"; loc }
+  | Int _ -> simple_ident_exp "string_of_int" ~loc
+  | Float _ -> simple_ident_exp "string_of_float" ~loc
 
 let less_than_validator_exp number record_field =
-  validator_exp_template "validate_less_than" ~loc:record_field.loc
+  validate_func_exp "validate_less_than" ~loc:record_field.loc
     [
       (Nolabel, number_to_str_exp ~loc:record_field.loc number);
       (Nolabel, number_to_exp number);
     ]
 
 let less_than_or_equal_validator_exp number record_field =
-  validator_exp_template "validate_less_than_or_equal" ~loc:record_field.loc
+  validate_func_exp "validate_less_than_or_equal" ~loc:record_field.loc
     [
       (Nolabel, number_to_str_exp ~loc:record_field.loc number);
       (Nolabel, number_to_exp number);
     ]
 
 let greater_than_validator_exp number record_field =
-  validator_exp_template "validate_greater_than" ~loc:record_field.loc
+  validate_func_exp "validate_greater_than" ~loc:record_field.loc
     [
       (Nolabel, number_to_str_exp ~loc:record_field.loc number);
       (Nolabel, number_to_exp number);
     ]
 
 let greater_than_or_equal_validator_exp number record_field =
-  validator_exp_template "validate_greater_than_or_equal" ~loc:record_field.loc
+  validate_func_exp "validate_greater_than_or_equal" ~loc:record_field.loc
     [
       (Nolabel, number_to_str_exp ~loc:record_field.loc number);
       (Nolabel, number_to_exp number);
     ]
 
 let equal_to_validator_exp number record_field =
-  validator_exp_template "validate_equal_to" ~loc:record_field.loc
+  validate_func_exp "validate_equal_to" ~loc:record_field.loc
     [
       (Nolabel, number_to_str_exp ~loc:record_field.loc number);
       (Nolabel, number_to_exp number);
     ]
 
 let not_equal_to_validator_exp number record_field =
-  validator_exp_template "validate_not_equal_to" ~loc:record_field.loc
+  validate_func_exp "validate_not_equal_to" ~loc:record_field.loc
     [
       (Nolabel, number_to_str_exp ~loc:record_field.loc number);
       (Nolabel, number_to_exp number);
     ]
 
 let option_validator_exp record_field inner =
-  validator_exp_template "option" ~loc:record_field.loc [ (Nolabel, inner) ]
+  validate_func_exp "option" ~loc:record_field.loc [ (Nolabel, inner) ]
 
 let email_validator_exp record_field =
-  validator_exp_template "validate_email" ~loc:record_field.loc []
+  validate_func_exp "validate_email" ~loc:record_field.loc []
 
 let rec validator_exp record_field validator =
   match record_field.typ with
@@ -342,38 +312,6 @@ let rec validator_exp record_field validator =
            validator)
   | _ -> Location.raise_errorf ~loc:record_field.loc "Something went wrong"
 
-let field_extractor_exp f =
-  let open Exp in
-  fun_ Nolabel None
-    (Pat.var { txt = "x"; loc = f.loc_type.loc })
-    (field
-       (ident { txt = Lident "x"; loc = f.loc_type.loc })
-       { txt = Lident f.name; loc = f.loc_type.loc })
-
-let list_validator_exp ~loc inner =
-  let open Exp in
-  apply
-    (ident { txt = Ldot (Lident "Validate", "list"); loc })
-    [ (Nolabel, inner) ]
-
-let ignored_exp ~loc inner =
-  let open Exp in
-  apply
-    (ident { txt = Ldot (Lident "Validate", "ignore_ok"); loc })
-    [ (Nolabel, inner) ]
-
-let call_other_type_validator_exp ~loc type_name =
-  let open Exp in
-  let txt =
-    match type_name with
-    | Lident name -> Lident (Printf.sprintf "validate_%s" name)
-    | Ldot (module_name, name) ->
-        Ldot (module_name, Printf.sprintf "validate_%s" name)
-    | _ -> Location.raise_errorf ~loc "Something went wrong"
-  in
-
-  ident { txt; loc }
-
 let rec validators_list_exp ~validators ~divable loc_type =
   match loc_type.typ with
   | List (t, inner_type) ->
@@ -383,19 +321,19 @@ let rec validators_list_exp ~validators ~divable loc_type =
       in
       let validators = extract_core_type_validators inner_type in
       let deep_validators_exp =
-        list_validator_exp ~loc:loc_type.loc
+        validate_list_exp ~loc:loc_type.loc
         @@ validators_list_exp ~validators ~divable { loc_type with typ = t }
       in
       let all_validators = deep_validators_exp :: list_validators in
-      expr_list loc_type.loc all_validators
+      list_exp ~loc:loc_type.loc all_validators
   | Other type_name ->
       if divable then
-        expr_list loc_type.loc
+        list_exp ~loc:loc_type.loc
           [
-            ignored_exp ~loc:loc_type.loc
-            @@ call_other_type_validator_exp ~loc:loc_type.loc type_name;
+            ignore_ok_exp ~loc:loc_type.loc
+            @@ dive_exp ~loc:loc_type.loc type_name;
           ]
-      else expr_list loc_type.loc []
+      else list_exp ~loc:loc_type.loc []
   | Tuple types ->
       let args_count = List.length types in
       let pattern =
@@ -438,16 +376,16 @@ let rec validators_list_exp ~validators ~divable loc_type =
         Exp.(
           apply
             (ident
-               { txt = Ldot (Lident "Validate", "record"); loc = loc_type.loc })
-            [ (Nolabel, expr_list loc_type.loc types_validators_exps) ])
+               { txt = Ldot (Lident "Validate", "keyed"); loc = loc_type.loc })
+            [ (Nolabel, list_exp ~loc:loc_type.loc types_validators_exps) ])
       in
 
-      expr_list loc_type.loc [ body ]
+      list_exp ~loc:loc_type.loc [ body ]
   | _ ->
       let generator = validator_exp loc_type in
       let validators = validators in
       let exps = validators |> List.map generator in
-      expr_list loc_type.loc exps
+      list_exp ~loc:loc_type.loc exps
 
 let field_validator_exp (ld : label_declaration) =
   let open Exp in
@@ -460,7 +398,7 @@ let field_validator_exp (ld : label_declaration) =
     (ident { txt = Ldot (Lident "Validate", "field"); loc = f.loc_type.loc })
     [
       (Nolabel, constant (Pconst_string (f.name, f.loc_type.loc, None)));
-      (Nolabel, field_extractor_exp f);
+      (Nolabel, field_extractor_exp ~loc:f.loc_type.loc f.name);
       ( Nolabel,
         validators_list_exp
           ~validators:

@@ -1,7 +1,7 @@
 open Ppxlib
 open Ast_helper
 open Validators
-open Utils
+open Exps
 
 let map_type_declaration ~loc td =
   let body =
@@ -18,11 +18,8 @@ let map_type_declaration ~loc td =
           Exp.(
             apply
               (ident
-                 {
-                   txt = Ldot (Lident "Validate", "record");
-                   loc = td.ptype_loc;
-                 })
-              [ (Nolabel, expr_list td.ptype_loc field_validators) ])
+                 { txt = Ldot (Lident "Validate", "keyed"); loc = td.ptype_loc })
+              [ (Nolabel, list_exp ~loc:td.ptype_loc field_validators) ])
         in
 
         Exp.(
@@ -46,6 +43,69 @@ let map_type_declaration ~loc td =
                  loc = td.ptype_loc;
                })
             [ (Nolabel, validators) ])
+    | Ptype_variant constructor_declarations ->
+        let match_exp_builder in_var name =
+          Exp.match_
+            (Exp.ident { txt = Lident in_var; loc = td.ptype_loc })
+            [
+              Exp.case
+                (Pat.construct
+                   { txt = Lident name; loc = td.ptype_loc }
+                   (Some (Pat.var { txt = "x"; loc = td.ptype_loc })))
+                (Exp.construct
+                   { txt = Lident "Some"; loc = td.ptype_loc }
+                   (Some (Exp.ident { txt = Lident "x"; loc = td.ptype_loc })));
+              Exp.case (Pat.any ())
+                (Exp.construct { txt = Lident "None"; loc = td.ptype_loc } None);
+            ]
+        in
+        let body =
+          constructor_declarations
+          |> List.map (fun cd ->
+                 match cd.pcd_args with
+                 | Pcstr_tuple _ ->
+                     Location.raise_errorf ~loc "Unsupported type"
+                 | Pcstr_record ld -> ld |> List.map field_validator_exp)
+          |> List.combine constructor_declarations
+          |> List.map (fun (cd, _) ->
+                 let name = cd.pcd_name.txt in
+                 let extractor_exp =
+                   Exp.(
+                     fun_ Nolabel None
+                       (Pat.var { txt = "x"; loc = td.ptype_loc })
+                       (match_exp_builder "x" name))
+                 in
+                 Exp.(
+                   apply
+                     (ident
+                        {
+                          txt = Ldot (Lident "Validate", "named_value");
+                          loc = td.ptype_loc;
+                        })
+                     [
+                       ( Nolabel,
+                         constant (Pconst_string (name, td.ptype_loc, None)) );
+                       (Nolabel, extractor_exp);
+                       (Nolabel, list_exp ~loc:td.ptype_loc []);
+                     ]))
+        in
+        let body =
+          Exp.(
+            apply
+              (ident
+                 { txt = Ldot (Lident "Validate", "keyed"); loc = td.ptype_loc })
+              [ (Nolabel, list_exp ~loc:td.ptype_loc body) ])
+        in
+        Printf.printf "%s\n" (Pprintast.string_of_expression body);
+
+        Exp.(
+          apply
+            (ident
+               {
+                 txt = Ldot (Lident "Validate", "validate");
+                 loc = td.ptype_loc;
+               })
+            [ (Nolabel, body) ])
     | _ -> Location.raise_errorf ~loc "Unsupported type"
   in
   let type_name = td.ptype_name.txt in

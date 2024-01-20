@@ -1,9 +1,9 @@
 open Ppxlib
 open Ast_helper
-open Field
 
 let int_exp i = Exp.constant (Pconst_integer (string_of_int i, None))
 let float_exp f = Exp.constant (Pconst_float (string_of_float f, None))
+let string_exp ~loc s = Exp.constant (Pconst_string (s, loc, None))
 let simple_ident_exp ~loc str = Exp.ident { txt = Lident str; loc }
 
 let module_ident_exp ~loc m str =
@@ -14,13 +14,6 @@ let rec list_exp ~loc = function
   | x :: xs ->
       Exp.construct { txt = Lident "::"; loc }
         (Some (Exp.tuple [ x; list_exp ~loc xs ]))
-
-let length_exp f =
-  match f.typ with
-  | String -> module_ident_exp ~loc:f.loc "String" "length"
-  | List _ -> module_ident_exp ~loc:f.loc "List" "length"
-  | _ ->
-      Location.raise_errorf ~loc:f.loc "length is not supported for this type"
 
 let validate_func_exp ~loc validator_name params =
   let open Exp in
@@ -53,3 +46,32 @@ let dive_exp ~loc type_name =
   in
 
   ident { txt; loc }
+
+let validate_field_exp ~loc name extractor_fun_exp validators_list_exp =
+  Exp.(
+    apply
+      (module_ident_exp ~loc "Validate" "field")
+      [
+        (Nolabel, string_exp ~loc name);
+        (Nolabel, extractor_fun_exp);
+        (Nolabel, validators_list_exp);
+      ])
+
+let tuple_element_extractor_fun_exp ~loc total n =
+  let open Exp in
+  let pattern =
+    Pat.tuple
+      (List.init total (fun i -> Pat.var { txt = Printf.sprintf "x%d" i; loc }))
+  in
+  fun_ Nolabel None pattern
+    (ident { txt = Lident (Printf.sprintf "x%d" n); loc })
+
+let validate_keyed_exp ~loc arg_exp =
+  Exp.(apply (module_ident_exp ~loc "Validate" "keyed") [ (Nolabel, arg_exp) ])
+
+let validate_group_exp ~loc arg_exp =
+  Exp.(apply (module_ident_exp ~loc "Validate" "group") [ (Nolabel, arg_exp) ])
+
+let validate_exp ~loc arg_exp =
+  Exp.(
+    apply (module_ident_exp ~loc "Validate" "validate") [ (Nolabel, arg_exp) ])

@@ -7,42 +7,9 @@ let map_type_declaration ~loc td =
   let body =
     match td.ptype_kind with
     | Ptype_record label_declarations ->
-        let field_validators =
-          label_declarations |> List.map field_validator_exp
-        in
-
-        (* field_validators *)
-        (* |> List.map Pprintast.string_of_expression *)
-        (* |> List.iter (Printf.printf "%s\n"); *)
-        let body =
-          Exp.(
-            apply
-              (ident
-                 { txt = Ldot (Lident "Validate", "keyed"); loc = td.ptype_loc })
-              [ (Nolabel, list_exp ~loc:td.ptype_loc field_validators) ])
-        in
-
-        Exp.(
-          apply
-            (ident
-               {
-                 txt = Ldot (Lident "Validate", "validate");
-                 loc = td.ptype_loc;
-               })
-            [ (Nolabel, body) ])
+        validate_record_exp ~loc label_declarations
     | Ptype_abstract ->
-        let validators =
-          td.ptype_manifest |> Option.get |> type_validator_exp
-        in
-        (* Printf.printf "%s\n" (Pprintast.string_of_expression validators); *)
-        Exp.(
-          apply
-            (ident
-               {
-                 txt = Ldot (Lident "Validate", "validate");
-                 loc = td.ptype_loc;
-               })
-            [ (Nolabel, validators) ])
+        td.ptype_manifest |> Option.get |> validate_abstract_exp ~loc
     | Ptype_variant constructor_declarations ->
         let match_exp_builder in_var name =
           Exp.match_

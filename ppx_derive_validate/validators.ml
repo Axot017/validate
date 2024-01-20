@@ -1,7 +1,7 @@
 open Ppxlib
 open Ast_helper
-open Field
 open Exps
+open Simple_type
 
 let min_length_key = "min_length"
 let max_length_key = "max_length"
@@ -180,6 +180,13 @@ let extract_field_validators =
 let extract_core_type_validators =
   validators_extractor Attribute.Context.core_type
 
+let length_exp f =
+  match f.typ with
+  | String -> module_ident_exp ~loc:f.loc "String" "length"
+  | List _ -> module_ident_exp ~loc:f.loc "List" "length"
+  | _ ->
+      Location.raise_errorf ~loc:f.loc "length is not supported for this type"
+
 let max_length_validator_exp max record_field =
   validate_func_exp "validate_max_length" ~loc:record_field.loc
     [ (Nolabel, length_exp record_field); (Nolabel, int_exp max) ]
@@ -336,86 +343,53 @@ let rec validators_list_exp ~validators ~divable loc_type =
       else list_exp ~loc:loc_type.loc []
   | Tuple types ->
       let args_count = List.length types in
-      let pattern =
-        Pat.tuple
-          (List.init args_count (fun i ->
-               Pat.var { txt = Printf.sprintf "x%d" i; loc = loc_type.loc }))
-      in
+      let tuple_extractor_exp = tuple_element_extractor_fun_exp args_count in
       let indexes = List.init args_count (fun i -> i) in
       let indexed_types = List.combine indexes types in
-      let types_validators_exps =
-        indexed_types
-        |> List.map (fun (i, (t, ct)) ->
-               Exp.(
-                 apply
-                   (ident
-                      {
-                        txt = Ldot (Lident "Validate", "field");
-                        loc = ct.ptyp_loc;
-                      })
-                   [
-                     ( Nolabel,
-                       constant
-                         (Pconst_string (string_of_int i, ct.ptyp_loc, None)) );
-                     ( Nolabel,
-                       fun_ Nolabel None pattern
-                         (ident
-                            {
-                              txt = Lident (Printf.sprintf "x%d" i);
-                              loc = loc_type.loc;
-                            }) );
-                     ( Nolabel,
-                       validators_list_exp
-                         ~validators:(extract_core_type_validators ct)
-                         ~divable:
-                           (Attribute.get dive_attribute_ct ct |> Option.is_some)
-                         { loc_type with typ = t } );
-                   ]))
+      let mapper (i, (t, ct)) =
+        validate_field_exp ~loc:ct.ptyp_loc (string_of_int i)
+          (tuple_extractor_exp ~loc:ct.ptyp_loc i)
+          (validators_list_exp
+             ~validators:(extract_core_type_validators ct)
+             ~divable:(Attribute.get dive_attribute_ct ct |> Option.is_some)
+             { loc_type with typ = t })
       in
       let body =
-        Exp.(
-          apply
-            (ident
-               { txt = Ldot (Lident "Validate", "keyed"); loc = loc_type.loc })
-            [ (Nolabel, list_exp ~loc:loc_type.loc types_validators_exps) ])
+        indexed_types |> List.map mapper |> list_exp ~loc:loc_type.loc
+        |> validate_keyed_exp ~loc:loc_type.loc
       in
 
       list_exp ~loc:loc_type.loc [ body ]
   | _ ->
       let generator = validator_exp loc_type in
-      let validators = validators in
-      let exps = validators |> List.map generator in
-      list_exp ~loc:loc_type.loc exps
+      validators |> List.map generator |> list_exp ~loc:loc_type.loc
+
+let type_validator_exp (ct : core_type) =
+  let validators = extract_core_type_validators ct in
+  let divable = Attribute.get dive_attribute_ct ct |> Option.is_some in
+  ct |> extract_loc_type
+  |> validators_list_exp ~validators ~divable
+  |> validate_group_exp ~loc:ct.ptyp_loc
 
 let field_validator_exp (ld : label_declaration) =
-  let open Exp in
   let f = extract_record_field ld in
-  let divable = Attribute.get dive_attribute_ld ld |> Option.is_some in
+  let divable_ld = Attribute.get dive_attribute_ld ld |> Option.is_some in
   let divable_ct =
     Attribute.get dive_attribute_ct ld.pld_type |> Option.is_some
   in
-  apply
-    (ident { txt = Ldot (Lident "Validate", "field"); loc = f.loc_type.loc })
-    [
-      (Nolabel, constant (Pconst_string (f.name, f.loc_type.loc, None)));
-      (Nolabel, field_extractor_exp ~loc:f.loc_type.loc f.name);
-      ( Nolabel,
-        validators_list_exp
-          ~validators:
-            (extract_field_validators ld
-            @ extract_core_type_validators ld.pld_type)
-          ~divable:(divable || divable_ct) f.loc_type );
-    ]
+  let divable = divable_ld || divable_ct in
+  f.loc_type
+  |> validators_list_exp
+       ~validators:
+         (extract_field_validators ld @ extract_core_type_validators ld.pld_type)
+       ~divable
+  |> validate_field_exp ~loc:ld.pld_loc f.name
+       (field_extractor_exp ~loc:f.loc_type.loc f.name)
 
-let type_validator_exp (ct : core_type) =
-  let open Exp in
-  let f = extract_loc_type ct in
-  apply
-    (ident { txt = Ldot (Lident "Validate", "group"); loc = f.loc })
-    [
-      ( Nolabel,
-        validators_list_exp
-          ~validators:(extract_core_type_validators ct)
-          ~divable:(Attribute.get dive_attribute_ct ct |> Option.is_some)
-          f );
-    ]
+let validate_record_exp ~loc label_declarations =
+  label_declarations
+  |> List.map field_validator_exp
+  |> list_exp ~loc |> validate_keyed_exp ~loc |> validate_exp ~loc
+
+let validate_abstract_exp ~loc ct =
+  ct |> type_validator_exp |> validate_exp ~loc

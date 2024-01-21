@@ -1,89 +1,20 @@
 open Ppxlib
-open Ast_helper
 open Exps
 open Simple_type
 
-let min_length_key = "min_length"
-let max_length_key = "max_length"
-let length_equals_key = "length_equals"
-let url_key = "url"
-let uuid_key = "uuid"
-let numeric_key = "numeric"
-let alpha_key = "alpha"
-let alphanumeric_key = "alphanumeric"
-let lowercase_key = "lowercase"
-let lowercase_alphanumeric_key = "lowercase_alphanumeric"
-let uppercase_key = "uppercase"
-let uppercase_alphanumeric_key = "uppercase_alphanumeric"
-let less_than = "less_than"
-let less_than_or_equal = "less_than_or_equal"
-let greater_than = "greater_than"
-let greater_than_or_equal = "greater_than_or_equal"
-let equal_to = "equal_to"
-let not_equal_to = "not_equal_to"
-let email = "email"
-let regex = "regex"
-let dive = "dive"
+type number = Int of int | Float of float [@@deriving show]
 
-type validator =
-  | MinLength of int
-  | MaxLength of int
-  | LengthEquals of int
-  | Url
-  | Uuid
-  | Numeric
-  | Alpha
-  | Alphanumeric
-  | Lowercase
-  | LowercaseAlphanumeric
-  | Uppercase
-  | UppercaseAlphanumeric
-  | LessThan of number
-  | LessThanOrEqual of number
-  | GreaterThan of number
-  | GreaterThanOrEqual of number
-  | EqualTo of number
-  | NotEqualTo of number
-  | Email
-  | Regex of string
-[@@deriving show]
-
-and number = Int of int | Float of float [@@deriving show]
-and validators = validator list [@@deriving show]
-
-let string_of_validator = function
-  | MinLength _ -> min_length_key
-  | MaxLength _ -> max_length_key
-  | LengthEquals _ -> length_equals_key
-  | Url -> url_key
-  | Uuid -> uuid_key
-  | Numeric -> numeric_key
-  | Alpha -> alpha_key
-  | Alphanumeric -> alphanumeric_key
-  | Lowercase -> lowercase_key
-  | LowercaseAlphanumeric -> lowercase_alphanumeric_key
-  | Uppercase -> uppercase_key
-  | UppercaseAlphanumeric -> uppercase_alphanumeric_key
-  | LessThan _ -> less_than
-  | LessThanOrEqual _ -> less_than_or_equal
-  | GreaterThan _ -> greater_than
-  | GreaterThanOrEqual _ -> greater_than_or_equal
-  | EqualTo _ -> equal_to
-  | NotEqualTo _ -> not_equal_to
-  | Email -> email
-  | Regex _ -> regex
-
-let process_numeric_attribute ?loc = function
+let process_numeric_attribute = function
   | Pconst_integer (i, _) -> Int (int_of_string i)
   | Pconst_float (f, _) -> Float (float_of_string f)
-  | _ -> Location.raise_errorf ?loc "Attribute must be an integer or float"
+  | _ -> Location.raise_errorf "Attribute must be an integer or float"
 
-let number_attribute ?loc name context =
+let number_attribute name context =
   Attribute.declare
     Printf.(sprintf "ppx_derive_validator.%s" name)
     context
     Ast_pattern.(single_expr_payload (pexp_constant __))
-    (process_numeric_attribute ?loc)
+    process_numeric_attribute
 
 let int_attrribute name context =
   Attribute.declare
@@ -106,79 +37,13 @@ let unit_attribute name context =
     Ast_pattern.(pstr nil)
     ()
 
-let dive_attribute_ld = unit_attribute dive Attribute.Context.label_declaration
-let dive_attribute_ct = unit_attribute dive Attribute.Context.core_type
+type 'a validator_params = {
+  name : string;
+  build_exp : 'a -> loc_type -> expression option;
+}
 
-let validators_extractor context =
-  let min_length_attribute = int_attrribute min_length_key context in
-  let max_length_attribute = int_attrribute max_length_key context in
-  let length_equals_attribute = int_attrribute length_equals_key context in
-  let uri_attribute = unit_attribute url_key context in
-  let uuid_attribute = unit_attribute uuid_key context in
-  let numeric_attribute = unit_attribute numeric_key context in
-  let alpha_attribute = unit_attribute alpha_key context in
-  let alphanumeric_attribute = unit_attribute alphanumeric_key context in
-  let lowercase_attribute = unit_attribute lowercase_key context in
-  let lowercase_alphanumeric_attribute =
-    unit_attribute lowercase_alphanumeric_key context
-  in
-  let uppercase_attribute = unit_attribute uppercase_key context in
-  let uppercase_alphanumeric_attribute =
-    unit_attribute uppercase_alphanumeric_key context
-  in
-  let less_than_attribute = number_attribute less_than context in
-  let less_than_or_equal_attribute =
-    number_attribute less_than_or_equal context
-  in
-  let greater_than_attribute = number_attribute greater_than context in
-  let greater_than_or_equal_attribute =
-    number_attribute greater_than_or_equal context
-  in
-  let equal_to_attribute = number_attribute equal_to context in
-  let not_equal_to_attribute = number_attribute not_equal_to context in
-  let email_attribute = unit_attribute email context in
-  let regex_attribute = string_attrribute regex context in
-
-  fun item ->
-    [
-      Attribute.get min_length_attribute item
-      |> Option.map (fun x -> MinLength x);
-      Attribute.get max_length_attribute item
-      |> Option.map (fun x -> MaxLength x);
-      Attribute.get length_equals_attribute item
-      |> Option.map (fun x -> LengthEquals x);
-      Attribute.get uri_attribute item |> Option.map (fun _ -> Url);
-      Attribute.get uuid_attribute item |> Option.map (fun _ -> Uuid);
-      Attribute.get numeric_attribute item |> Option.map (fun _ -> Numeric);
-      Attribute.get alpha_attribute item |> Option.map (fun _ -> Alpha);
-      Attribute.get alphanumeric_attribute item
-      |> Option.map (fun _ -> Alphanumeric);
-      Attribute.get lowercase_attribute item |> Option.map (fun _ -> Lowercase);
-      Attribute.get lowercase_alphanumeric_attribute item
-      |> Option.map (fun _ -> LowercaseAlphanumeric);
-      Attribute.get uppercase_attribute item |> Option.map (fun _ -> Uppercase);
-      Attribute.get uppercase_alphanumeric_attribute item
-      |> Option.map (fun _ -> UppercaseAlphanumeric);
-      Attribute.get less_than_attribute item |> Option.map (fun x -> LessThan x);
-      Attribute.get less_than_or_equal_attribute item
-      |> Option.map (fun x -> LessThanOrEqual x);
-      Attribute.get greater_than_attribute item
-      |> Option.map (fun x -> GreaterThan x);
-      Attribute.get greater_than_or_equal_attribute item
-      |> Option.map (fun x -> GreaterThanOrEqual x);
-      Attribute.get equal_to_attribute item |> Option.map (fun x -> EqualTo x);
-      Attribute.get not_equal_to_attribute item
-      |> Option.map (fun x -> NotEqualTo x);
-      Attribute.get email_attribute item |> Option.map (fun _ -> Email);
-      Attribute.get regex_attribute item |> Option.map (fun x -> Regex x);
-    ]
-    |> List.filter_map (fun x -> x)
-
-let extract_field_validators =
-  validators_extractor Attribute.Context.label_declaration
-
-let extract_core_type_validators =
-  validators_extractor Attribute.Context.core_type
+let get_exp attr (build_exp : 'a -> expression) v loc_type =
+  Attribute.get attr v |> Option.map (fun x -> build_exp (x, loc_type))
 
 let length_exp f =
   match f.typ with
@@ -187,172 +52,209 @@ let length_exp f =
   | _ ->
       Location.raise_errorf ~loc:f.loc "length is not supported for this type"
 
-let max_length_validator_exp max record_field =
-  validate_func_exp "validate_max_length" ~loc:record_field.loc
-    [ (Nolabel, length_exp record_field); (Nolabel, int_exp max) ]
+let validate_number_func_exp ~loc name value =
+  match value with
+  | Int i ->
+      validate_func_exp name ~loc
+        [
+          (Nolabel, simple_ident_exp ~loc "string_of_int"); (Nolabel, int_exp i);
+        ]
+  | Float f ->
+      validate_func_exp name ~loc
+        [
+          (Nolabel, simple_ident_exp ~loc "string_of_float");
+          (Nolabel, float_exp f);
+        ]
 
-let min_length_validator_exp min record_field =
-  validate_func_exp "validate_min_length" ~loc:record_field.loc
-    [ (Nolabel, length_exp record_field); (Nolabel, int_exp min) ]
+let validators ctx =
+  [
+    {
+      name = "min_length";
+      build_exp =
+        get_exp (int_attrribute "min_length" ctx) (fun (x, loc_type) ->
+            validate_func_exp "validate_min_length" ~loc:loc_type.loc
+              [ (Nolabel, length_exp loc_type); (Nolabel, int_exp x) ]);
+    };
+    {
+      name = "max_length";
+      build_exp =
+        get_exp (int_attrribute "max_length" ctx) (fun (x, loc_type) ->
+            validate_func_exp "validate_max_length" ~loc:loc_type.loc
+              [ (Nolabel, length_exp loc_type); (Nolabel, int_exp x) ]);
+    };
+    {
+      name = "length_equals";
+      build_exp =
+        get_exp (int_attrribute "length_equals" ctx) (fun (x, loc_type) ->
+            validate_func_exp "validate_length_equals" ~loc:loc_type.loc
+              [ (Nolabel, length_exp loc_type); (Nolabel, int_exp x) ]);
+    };
+    {
+      name = "url";
+      build_exp =
+        get_exp (unit_attribute "url" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_url" ~loc:loc_type.loc []);
+    };
+    {
+      name = "uuid";
+      build_exp =
+        get_exp (unit_attribute "uuid" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_uuid" ~loc:loc_type.loc []);
+    };
+    {
+      name = "email";
+      build_exp =
+        get_exp (unit_attribute "email" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_email" ~loc:loc_type.loc []);
+    };
+    {
+      name = "numeric";
+      build_exp =
+        get_exp (unit_attribute "numeric" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_numeric" ~loc:loc_type.loc []);
+    };
+    {
+      name = "alpha";
+      build_exp =
+        get_exp (unit_attribute "alpha" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_alpha" ~loc:loc_type.loc []);
+    };
+    {
+      name = "alphanumeric";
+      build_exp =
+        get_exp (unit_attribute "alphanumeric" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_alphanumeric" ~loc:loc_type.loc []);
+    };
+    {
+      name = "lowercase";
+      build_exp =
+        get_exp (unit_attribute "lowercase" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_lowercase" ~loc:loc_type.loc []);
+    };
+    {
+      name = "lowercase_alphanumeric";
+      build_exp =
+        get_exp (unit_attribute "lowercase_alphanumeric" ctx)
+          (fun (_, loc_type) ->
+            validate_func_exp "validate_lowercase_alphanumeric"
+              ~loc:loc_type.loc []);
+    };
+    {
+      name = "uppercase";
+      build_exp =
+        get_exp (unit_attribute "uppercase" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_uppercase" ~loc:loc_type.loc []);
+    };
+    {
+      name = "uppercase_alphanumeric";
+      build_exp =
+        get_exp (unit_attribute "uppercase_alphanumeric" ctx)
+          (fun (_, loc_type) ->
+            validate_func_exp "validate_uppercase_alphanumeric"
+              ~loc:loc_type.loc []);
+    };
+    {
+      name = "less_than";
+      build_exp =
+        get_exp (number_attribute "less_than" ctx) (fun (x, loc_type) ->
+            validate_number_func_exp ~loc:loc_type.loc "validate_less_than" x);
+    };
+    {
+      name = "less_than_or_equal";
+      build_exp =
+        get_exp (number_attribute "less_than_or_equal" ctx)
+          (fun (x, loc_type) ->
+            validate_number_func_exp ~loc:loc_type.loc
+              "validate_less_than_or_equal" x);
+    };
+    {
+      name = "greater_than";
+      build_exp =
+        get_exp (number_attribute "greater_than" ctx) (fun (x, loc_type) ->
+            validate_number_func_exp ~loc:loc_type.loc "validate_greater_than" x);
+    };
+    {
+      name = "greater_than_or_equal";
+      build_exp =
+        get_exp (number_attribute "greater_than_or_equal" ctx)
+          (fun (x, loc_type) ->
+            validate_number_func_exp ~loc:loc_type.loc
+              "validate_greater_than_or_equal" x);
+    };
+    {
+      name = "equal_to";
+      build_exp =
+        get_exp (number_attribute "equal_to" ctx) (fun (x, loc_type) ->
+            validate_number_func_exp ~loc:loc_type.loc "validate_equal_to" x);
+    };
+    {
+      name = "not_equal_to";
+      build_exp =
+        get_exp (number_attribute "not_equal_to" ctx) (fun (x, loc_type) ->
+            validate_number_func_exp ~loc:loc_type.loc "validate_not_equal_to" x);
+    };
+    {
+      name = "regex";
+      build_exp =
+        get_exp (string_attrribute "regex" ctx) (fun (x, loc_type) ->
+            validate_func_exp "validate_str_regex" ~loc:loc_type.loc
+              [ (Nolabel, string_exp ~loc:loc_type.loc x) ]);
+    };
+  ]
 
-let length_equals_validator_exp length record_field =
-  validate_func_exp "validate_length_equals" ~loc:record_field.loc
-    [ (Nolabel, length_exp record_field); (Nolabel, int_exp length) ]
+let ct_validators = validators Attribute.Context.core_type
+let ld_validators = validators Attribute.Context.label_declaration
+let ct_dive_attribute = unit_attribute "dive" Attribute.Context.core_type
+let ct_divable ct = Attribute.get ct_dive_attribute ct |> Option.is_some
 
-let url_validator_exp record_field =
-  validate_func_exp "validate_url" ~loc:record_field.loc []
+let ld_dive_attribute =
+  unit_attribute "dive" Attribute.Context.label_declaration
 
-let uuid_validator_exp record_field =
-  validate_func_exp "validate_uuid" ~loc:record_field.loc []
+let ld_divable ld = Attribute.get ld_dive_attribute ld |> Option.is_some
 
-let numeric_validator_exp record_field =
-  validate_func_exp "validate_numeric" ~loc:record_field.loc []
+let ct_validators_to_apply ct loc_type =
+  ct_validators |> List.filter_map (fun v -> v.build_exp ct loc_type)
 
-let alpha_validator_exp record_field =
-  validate_func_exp "validate_alpha" ~loc:record_field.loc []
-
-let alphanumeric_validator_exp record_field =
-  validate_func_exp "validate_alphanumeric" ~loc:record_field.loc []
-
-let lowercase_validator_exp record_field =
-  validate_func_exp "validate_lowercase" ~loc:record_field.loc []
-
-let lowercase_alphanumeric_validator_exp record_field =
-  validate_func_exp "validate_lowercase_alphanumeric" ~loc:record_field.loc []
-
-let uppercase_validator_exp record_field =
-  validate_func_exp "validate_uppercase" ~loc:record_field.loc []
-
-let uppercase_alphanumeric_validator_exp record_field =
-  validate_func_exp "validate_uppercase_alphanumeric" ~loc:record_field.loc []
-
-let regex_validator_exp regex record_field =
-  validate_func_exp "validate_str_regex" ~loc:record_field.loc
-    [ (Nolabel, Exp.constant (Pconst_string (regex, record_field.loc, None))) ]
-
-let number_to_exp = function Int i -> int_exp i | Float f -> float_exp f
-
-let number_to_str_exp ~loc = function
-  | Int _ -> simple_ident_exp "string_of_int" ~loc
-  | Float _ -> simple_ident_exp "string_of_float" ~loc
-
-let less_than_validator_exp number record_field =
-  validate_func_exp "validate_less_than" ~loc:record_field.loc
-    [
-      (Nolabel, number_to_str_exp ~loc:record_field.loc number);
-      (Nolabel, number_to_exp number);
-    ]
-
-let less_than_or_equal_validator_exp number record_field =
-  validate_func_exp "validate_less_than_or_equal" ~loc:record_field.loc
-    [
-      (Nolabel, number_to_str_exp ~loc:record_field.loc number);
-      (Nolabel, number_to_exp number);
-    ]
-
-let greater_than_validator_exp number record_field =
-  validate_func_exp "validate_greater_than" ~loc:record_field.loc
-    [
-      (Nolabel, number_to_str_exp ~loc:record_field.loc number);
-      (Nolabel, number_to_exp number);
-    ]
-
-let greater_than_or_equal_validator_exp number record_field =
-  validate_func_exp "validate_greater_than_or_equal" ~loc:record_field.loc
-    [
-      (Nolabel, number_to_str_exp ~loc:record_field.loc number);
-      (Nolabel, number_to_exp number);
-    ]
-
-let equal_to_validator_exp number record_field =
-  validate_func_exp "validate_equal_to" ~loc:record_field.loc
-    [
-      (Nolabel, number_to_str_exp ~loc:record_field.loc number);
-      (Nolabel, number_to_exp number);
-    ]
-
-let not_equal_to_validator_exp number record_field =
-  validate_func_exp "validate_not_equal_to" ~loc:record_field.loc
-    [
-      (Nolabel, number_to_str_exp ~loc:record_field.loc number);
-      (Nolabel, number_to_exp number);
-    ]
-
-let option_validator_exp record_field inner =
-  validate_func_exp "option" ~loc:record_field.loc [ (Nolabel, inner) ]
-
-let email_validator_exp record_field =
-  validate_func_exp "validate_email" ~loc:record_field.loc []
-
-let rec validator_exp record_field validator =
-  match record_field.typ with
-  | Bool | Int | Float | String | List _ -> (
-      match validator with
-      | MaxLength max -> max_length_validator_exp max record_field
-      | MinLength min -> min_length_validator_exp min record_field
-      | LengthEquals length -> length_equals_validator_exp length record_field
-      | Url -> url_validator_exp record_field
-      | Uuid -> uuid_validator_exp record_field
-      | Numeric -> numeric_validator_exp record_field
-      | Alpha -> alpha_validator_exp record_field
-      | Alphanumeric -> alphanumeric_validator_exp record_field
-      | Lowercase -> lowercase_validator_exp record_field
-      | LowercaseAlphanumeric ->
-          lowercase_alphanumeric_validator_exp record_field
-      | Uppercase -> uppercase_validator_exp record_field
-      | UppercaseAlphanumeric ->
-          uppercase_alphanumeric_validator_exp record_field
-      | LessThan number -> less_than_validator_exp number record_field
-      | LessThanOrEqual number ->
-          less_than_or_equal_validator_exp number record_field
-      | GreaterThan number -> greater_than_validator_exp number record_field
-      | GreaterThanOrEqual number ->
-          greater_than_or_equal_validator_exp number record_field
-      | EqualTo number -> equal_to_validator_exp number record_field
-      | NotEqualTo number -> not_equal_to_validator_exp number record_field
-      | Email -> email_validator_exp record_field
-      | Regex regex -> regex_validator_exp regex record_field)
-  | Option (inner_record_field_type, _) ->
-      option_validator_exp record_field
-        (validator_exp
-           { record_field with typ = inner_record_field_type }
-           validator)
-  | _ -> Location.raise_errorf ~loc:record_field.loc "Something went wrong"
+let ld_validators_to_apply ld loc_type =
+  ld_validators |> List.filter_map (fun v -> v.build_exp ld loc_type)
 
 let rec validators_list_exp ~validators ~divable loc_type =
   match loc_type.typ with
   | List (t, inner_type) ->
-      let list_validators = validators |> List.map (validator_exp loc_type) in
-      let divable =
-        Attribute.get dive_attribute_ct inner_type |> Option.is_some
-      in
-      let validators = extract_core_type_validators inner_type in
+      let inner_divable = ct_divable inner_type in
+      let inner_loc_type = { loc_type with typ = t } in
+      let inner_validators = ct_validators_to_apply inner_type inner_loc_type in
       let deep_validators_exp =
-        validate_list_exp ~loc:loc_type.loc
-        @@ validators_list_exp ~validators ~divable { loc_type with typ = t }
+        inner_loc_type
+        |> validators_list_exp ~validators:inner_validators
+             ~divable:inner_divable
+        |> validate_list_exp ~loc:loc_type.loc
       in
-      let all_validators = deep_validators_exp :: list_validators in
+      let all_validators = deep_validators_exp :: validators in
       list_exp ~loc:loc_type.loc all_validators
-  | Other type_name ->
-      if divable then
-        list_exp ~loc:loc_type.loc
-          [
-            ignore_ok_exp ~loc:loc_type.loc
-            @@ dive_exp ~loc:loc_type.loc type_name;
-          ]
-      else list_exp ~loc:loc_type.loc []
+  | Other type_name -> (
+      match divable with
+      | true ->
+          list_exp ~loc:loc_type.loc
+            [
+              ignore_ok_exp ~loc:loc_type.loc
+              @@ dive_exp ~loc:loc_type.loc type_name;
+            ]
+      | false -> list_exp ~loc:loc_type.loc [])
   | Tuple types ->
       let args_count = List.length types in
       let tuple_extractor_exp = tuple_element_extractor_fun_exp args_count in
       let indexes = List.init args_count (fun i -> i) in
       let indexed_types = List.combine indexes types in
       let mapper (i, (t, ct)) =
-        validate_field_exp ~loc:ct.ptyp_loc (string_of_int i)
-          (tuple_extractor_exp ~loc:ct.ptyp_loc i)
-          (validators_list_exp
-             ~validators:(extract_core_type_validators ct)
-             ~divable:(Attribute.get dive_attribute_ct ct |> Option.is_some)
-             { loc_type with typ = t })
+        let inner_type = { loc_type with typ = t } in
+        let inner_validators = ct_validators_to_apply ct inner_type in
+        let inner_divable = ct_divable ct in
+        inner_type
+        |> validators_list_exp ~validators:inner_validators
+             ~divable:inner_divable
+        |> validate_field_exp ~loc:ct.ptyp_loc (string_of_int i)
+             (tuple_extractor_exp ~loc:ct.ptyp_loc i)
       in
       let body =
         indexed_types |> List.map mapper |> list_exp ~loc:loc_type.loc
@@ -360,29 +262,37 @@ let rec validators_list_exp ~validators ~divable loc_type =
       in
 
       list_exp ~loc:loc_type.loc [ body ]
-  | _ ->
-      let generator = validator_exp loc_type in
-      validators |> List.map generator |> list_exp ~loc:loc_type.loc
+  | Option (t, inner_ct) ->
+      let inner_type = { loc_type with typ = t } in
+
+      let inner_validators = ct_validators_to_apply inner_ct inner_type in
+      let inner_divable = ct_divable inner_ct in
+      let validators =
+        inner_type
+        |> validators_list_exp ~divable:inner_divable
+             ~validators:inner_validators
+        |> validate_option ~loc:loc_type.loc
+      in
+      list_exp ~loc:loc_type.loc [ validators ]
+  | _ -> validators |> list_exp ~loc:loc_type.loc
 
 let type_validator_exp (ct : core_type) =
-  let validators = extract_core_type_validators ct in
-  let divable = Attribute.get dive_attribute_ct ct |> Option.is_some in
-  ct |> extract_loc_type
-  |> validators_list_exp ~validators ~divable
+  let loc_type = extract_loc_type ct in
+  let validators = ct_validators_to_apply ct loc_type in
+  let divable = ct_divable ct in
+  validators_list_exp ~validators ~divable loc_type
   |> validate_group_exp ~loc:ct.ptyp_loc
 
 let field_validator_exp (ld : label_declaration) =
   let f = extract_record_field ld in
-  let divable_ld = Attribute.get dive_attribute_ld ld |> Option.is_some in
-  let divable_ct =
-    Attribute.get dive_attribute_ct ld.pld_type |> Option.is_some
-  in
+  let divable_ld = ld_divable ld in
+  let divable_ct = ct_divable ld.pld_type in
   let divable = divable_ld || divable_ct in
+  let ld_validators = ld_validators_to_apply ld f.loc_type in
+  let ct_validators = ct_validators_to_apply ld.pld_type f.loc_type in
+  let validators = ld_validators @ ct_validators in
   f.loc_type
-  |> validators_list_exp
-       ~validators:
-         (extract_field_validators ld @ extract_core_type_validators ld.pld_type)
-       ~divable
+  |> validators_list_exp ~validators ~divable
   |> validate_field_exp ~loc:ld.pld_loc f.name
        (field_extractor_exp ~loc:f.loc_type.loc f.name)
 

@@ -30,8 +30,8 @@ type test_record = {
   greater_than_or_equal : int; [@greater_than_or_equal 5]
   equal_to : int; [@equal_to 5]
   not_equal_to : int; [@not_equal_to 10]
-  option_some : string option; [@min_length 2]
-  option_none : string option; [@min_length 2]
+  option_some : (string[@min_length 2]) option;
+  option_none : (string[@min_length 2]) option;
   test_list : (string[@min_length 2]) list;
   list_min_length : (string[@min_length 1]) list; [@min_length 3]
   list_max_length : (string[@max_length 3]) list; [@max_length 5]
@@ -275,8 +275,11 @@ let test_err () =
               ] );
             ( "option_some",
               [
-                Validate.BaseError
-                  { code = "min_length"; params = [ ("threshold", "2") ] };
+                Validate.GroupError
+                  [
+                    Validate.BaseError
+                      { code = "min_length"; params = [ ("threshold", "2") ] };
+                  ];
               ] );
             ( "not_equal_to",
               [

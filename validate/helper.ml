@@ -83,10 +83,6 @@ let list (validators : 'a validator list) iterable :
   | [] -> Ok ()
   | errors -> Error (IterableError errors)
 
-let option (validator : 'a validator) : 'a option validator = function
-  | Some value -> validator value
-  | None -> Ok ()
-
 let ignore_ok f v =
   let result = f v in
   match result with Ok _ -> Ok () | Error _ as error -> error
@@ -103,3 +99,7 @@ let group (validators : 'a validator list) value =
   match validate validators [] with
   | [] -> Ok ()
   | errors -> Error (GroupError errors)
+
+let option (validators : 'a validator list) : 'a option validator = function
+  | Some value -> group validators value
+  | None -> Ok ()

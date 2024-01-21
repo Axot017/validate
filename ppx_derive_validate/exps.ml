@@ -75,3 +75,6 @@ let validate_group_exp ~loc arg_exp =
 let validate_exp ~loc arg_exp =
   Exp.(
     apply (module_ident_exp ~loc "Validate" "validate") [ (Nolabel, arg_exp) ])
+
+let validate_option ~loc arg_exp =
+  Exp.(apply (module_ident_exp ~loc "Validate" "option") [ (Nolabel, arg_exp) ])

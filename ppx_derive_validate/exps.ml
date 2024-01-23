@@ -1,5 +1,6 @@
 open Ppxlib
 open Ast_helper
+open Pats
 
 let int_exp i = Exp.constant (Pconst_integer (string_of_int i, None))
 let float_exp f = Exp.constant (Pconst_float (string_of_float f, None))
@@ -47,6 +48,24 @@ let dive_exp ~loc type_name =
 
   ident { txt; loc }
 
+let variant_tuple_extractor_exp ~loc expected_type_name total n =
+  let pattern = n_element_tuple_pat ~loc ~prefix:"x" total in
+  let match_exp =
+    Exp.match_
+      (simple_ident_exp ~loc "x")
+      [
+        Exp.case
+          (Pat.construct
+             { txt = Lident expected_type_name; loc }
+             (Some pattern))
+          (Exp.construct
+             { txt = Lident "Some"; loc }
+             (Some (simple_ident_exp ~loc (Printf.sprintf "x%d" n))));
+        Exp.case (Pat.any ()) (Exp.construct { txt = Lident "None"; loc } None);
+      ]
+  in
+  Exp.(fun_ Nolabel None (Pat.var { txt = "x"; loc }) match_exp)
+
 let validate_field_exp ~loc name extractor_fun_exp validators_list_exp =
   Exp.(
     apply
@@ -57,14 +76,20 @@ let validate_field_exp ~loc name extractor_fun_exp validators_list_exp =
         (Nolabel, validators_list_exp);
       ])
 
+let validate_named_value_exp ~loc name extractor_fun_exp validators_list_exp =
+  Exp.(
+    apply
+      (module_ident_exp ~loc "Validate" "named_value")
+      [
+        (Nolabel, string_exp ~loc name);
+        (Nolabel, extractor_fun_exp);
+        (Nolabel, validators_list_exp);
+      ])
+
 let tuple_element_extractor_fun_exp ~loc total n =
   let open Exp in
-  let pattern =
-    Pat.tuple
-      (List.init total (fun i -> Pat.var { txt = Printf.sprintf "x%d" i; loc }))
-  in
-  fun_ Nolabel None pattern
-    (ident { txt = Lident (Printf.sprintf "x%d" n); loc })
+  let pattern = n_element_tuple_pat ~loc ~prefix:"x" total in
+  fun_ Nolabel None pattern (simple_ident_exp ~loc (Printf.sprintf "x%d" n))
 
 let validate_keyed_exp ~loc arg_exp =
   Exp.(apply (module_ident_exp ~loc "Validate" "keyed") [ (Nolabel, arg_exp) ])
@@ -74,7 +99,9 @@ let validate_group_exp ~loc arg_exp =
 
 let validate_exp ~loc arg_exp =
   Exp.(
-    apply (module_ident_exp ~loc "Validate" "validate") [ (Nolabel, arg_exp) ])
+    apply
+      (module_ident_exp ~loc "Validate" "validate")
+      [ (Nolabel, arg_exp); (Nolabel, simple_ident_exp ~loc "x") ])
 
 let validate_option ~loc arg_exp =
   Exp.(apply (module_ident_exp ~loc "Validate" "option") [ (Nolabel, arg_exp) ])

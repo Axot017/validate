@@ -2,7 +2,8 @@ open Err
 
 type 'a validator = 'a -> (unit, validation_error) result
 and ('a, 'b) field_extractor = 'a -> 'b
-and 'a field_validator = 'a -> (unit, keyed_validation_errors) result
+and ('a, 'b) named_value_extractor = 'a -> 'b option
+and 'a keyed_validator = 'a -> (unit, keyed_validation_errors) result
 
 let validate (validator : 'a validator) (value : 'a) :
     ('a, validation_error) result =
@@ -23,7 +24,7 @@ let field field_name (field_extractor : ('a, 'b) field_extractor)
   let errors = validate validators [] in
   match errors with [] -> Ok () | errors -> Error (field_name, errors)
 
-let record (validators : 'a field_validator list) record :
+let keyed (validators : 'a keyed_validator list) record :
     (unit, validation_error) result =
   let rec validate validators errors =
     match validators with
@@ -35,6 +36,24 @@ let record (validators : 'a field_validator list) record :
   in
   let errors = validate validators [] in
   match errors with [] -> Ok () | errors -> Error (KeyedError errors)
+
+let named_value name (extractor : ('a, 'b) named_value_extractor)
+    (validators : 'b validator list) variant :
+    (unit, keyed_validation_errors) result =
+  let value = extractor variant in
+  match value with
+  | Some value -> (
+      let rec validate validators errors =
+        match validators with
+        | [] -> errors
+        | validator :: rest -> (
+            match validator value with
+            | Ok _ -> validate rest errors
+            | Error error -> validate rest (error :: errors))
+      in
+      let errors = validate validators [] in
+      match errors with [] -> Ok () | errors -> Error (name, errors))
+  | None -> Ok ()
 
 let iterable_item index (validators : 'a validator list) item :
     (unit, index_validation_error) result =
@@ -64,10 +83,6 @@ let list (validators : 'a validator list) iterable :
   | [] -> Ok ()
   | errors -> Error (IterableError errors)
 
-let option (validator : 'a validator) : 'a option validator = function
-  | Some value -> validator value
-  | None -> Ok ()
-
 let ignore_ok f v =
   let result = f v in
   match result with Ok _ -> Ok () | Error _ as error -> error
@@ -84,3 +99,7 @@ let group (validators : 'a validator list) value =
   match validate validators [] with
   | [] -> Ok ()
   | errors -> Error (GroupError errors)
+
+let option (validators : 'a validator list) : 'a option validator = function
+  | Some value -> group validators value
+  | None -> Ok ()

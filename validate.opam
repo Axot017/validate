@@ -18,6 +18,7 @@ depends: [
   "ppx_deriving"
   "re"
   "uri"
+  "bisect_ppx" {with-test}
   "odoc" {with-doc}
 ]
 build: [

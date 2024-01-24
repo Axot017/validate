@@ -33,6 +33,8 @@ let test_list_type_error () =
     (Error
        (Validate.GroupError
           [
+            Validate.BaseError
+              { code = "min_length"; params = [ ("threshold", "2") ] };
             Validate.IterableError
               [
                 ( 0,
@@ -41,12 +43,10 @@ let test_list_type_error () =
                       { code = "min_length"; params = [ ("threshold", "1") ] };
                   ] );
               ];
-            Validate.BaseError
-              { code = "min_length"; params = [ ("threshold", "2") ] };
           ]))
     result
 
-type optional_type = (string option[@min_length 1]) [@@deriving validate]
+type optional_type = (string[@min_length 1]) option [@@deriving validate]
 
 let test_optional_type_none () =
   let result = validate_optional_type None in
@@ -65,8 +65,11 @@ let test_optional_type_some_error () =
     (Error
        (Validate.GroupError
           [
-            Validate.BaseError
-              { code = "min_length"; params = [ ("threshold", "1") ] };
+            Validate.GroupError
+              [
+                Validate.BaseError
+                  { code = "min_length"; params = [ ("threshold", "1") ] };
+              ];
           ]))
     result
 

@@ -1,61 +1,29 @@
 open Ppxlib
 open Ast_helper
 open Validators
-open Utils
 
 let map_type_declaration ~loc td =
   let body =
     match td.ptype_kind with
     | Ptype_record label_declarations ->
-        let field_validators =
-          label_declarations |> List.map field_validator_exp
-        in
-
-        (* field_validators *)
-        (* |> List.map Pprintast.string_of_expression *)
-        (* |> List.iter (Printf.printf "%s\n"); *)
-        let body =
-          Exp.(
-            apply
-              (ident
-                 {
-                   txt = Ldot (Lident "Validate", "record");
-                   loc = td.ptype_loc;
-                 })
-              [ (Nolabel, expr_list td.ptype_loc field_validators) ])
-        in
-
-        Exp.(
-          apply
-            (ident
-               {
-                 txt = Ldot (Lident "Validate", "validate");
-                 loc = td.ptype_loc;
-               })
-            [ (Nolabel, body) ])
+        validate_record_exp ~loc label_declarations
     | Ptype_abstract ->
-        let validators =
-          td.ptype_manifest |> Option.get |> type_validator_exp
-        in
-        (* Printf.printf "%s\n" (Pprintast.string_of_expression validators); *)
-        Exp.(
-          apply
-            (ident
-               {
-                 txt = Ldot (Lident "Validate", "validate");
-                 loc = td.ptype_loc;
-               })
-            [ (Nolabel, validators) ])
+        td.ptype_manifest |> Option.get |> validate_abstract_exp ~loc
+    | Ptype_variant constructor_declarations ->
+        validate_variant_exp ~loc constructor_declarations
     | _ -> Location.raise_errorf ~loc "Unsupported type"
   in
   let type_name = td.ptype_name.txt in
+
+  let param_pattern = Pat.var { txt = "x"; loc } in
+  let param_type = Typ.constr { txt = Lident type_name; loc } [] in
+  let typed_param_pattern = Pat.constraint_ param_pattern param_type in
+  let func_expr = Exp.fun_ Nolabel None typed_param_pattern body in
+
   let function_name = "validate_" ^ type_name in
 
-  let pattern = Pat.var { txt = function_name; loc } in
-  let value_binding = Vb.mk pattern body in
-
-  let function_item = Str.value Nonrecursive [ value_binding ] in
-  function_item
+  let function_pattern = Pat.var { txt = function_name; loc } in
+  Str.value Nonrecursive [ Vb.mk function_pattern func_expr ]
 
 let map_sig ~loc td =
   match td.ptype_kind with

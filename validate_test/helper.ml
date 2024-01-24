@@ -6,7 +6,7 @@ let test_validate_record_error_simple () =
   let r = { a = "111"; b = "333"; c = "" } in
   let validate =
     Validate.(
-      record
+      keyed
         [
           field "a"
             (fun x -> x.a)
@@ -39,7 +39,7 @@ let test_validate_record_ok_simple () =
   let r = { a = "111"; b = "333"; c = "444" } in
   let validate =
     Validate.(
-      record
+      keyed
         [
           field "a"
             (fun x -> x.a)
@@ -72,7 +72,7 @@ let test_validate_record_error_complex () =
   in
   let validate =
     Validate.(
-      record
+      keyed
         [
           field "x1"
             (fun x -> x.x1)
@@ -80,7 +80,7 @@ let test_validate_record_error_complex () =
           field "x2"
             (fun x -> x.x2)
             [
-              record
+              keyed
                 [
                   field "y1"
                     (fun x -> x.y1)
@@ -95,7 +95,7 @@ let test_validate_record_error_complex () =
             [
               list
                 [
-                  record
+                  keyed
                     [
                       field "y1"
                         (fun x -> x.y1)
@@ -197,7 +197,7 @@ let test_validate_record_ok_complex () =
   in
   let validate =
     Validate.(
-      record
+      keyed
         [
           field "x1"
             (fun x -> x.x1)
@@ -205,7 +205,7 @@ let test_validate_record_ok_complex () =
           field "x2"
             (fun x -> x.x2)
             [
-              record
+              keyed
                 [
                   field "y1"
                     (fun x -> x.y1)
@@ -220,7 +220,7 @@ let test_validate_record_ok_complex () =
             [
               list
                 [
-                  record
+                  keyed
                     [
                       field "y1"
                         (fun x -> x.y1)

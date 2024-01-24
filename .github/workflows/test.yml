@@ -1,0 +1,35 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: Test
+    runs-on: ubuntu-latest 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Ocaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: 5.1.1
+
+      - name: Install dependencies
+        run: opam install . --deps-only --with-test
+
+      - name: Build
+        run: opam exec -- dune build --verbose
+
+      - name: Test
+        run: opam exec -- dune runtest --verbose
+
+      - name: Coverage
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          PULL_REQUEST_NUMBER: ${{ github.event.number }}
+        run: |
+          opam exec -- dune runtest --instrument-with bisect_ppx --force
+          opam exec -- bisect-ppx-report send-to Codecov

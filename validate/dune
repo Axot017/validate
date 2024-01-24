@@ -2,4 +2,5 @@
   (name validate)
   (public_name validate)
   (libraries re uri)
+  (instrumentation (backend bisect_ppx))
   (preprocess (pps ppx_deriving.show ppx_deriving.eq)))

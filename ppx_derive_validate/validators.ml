@@ -329,15 +329,43 @@ let validate_variant_tuple_exp ~variant_name cts =
   in
   indexed_types |> List.filter_map mapper
 
-let validate_constructor_declaration_exp ~loc cd =
+let validate_variant_record_exp ~variant_name lds =
+  let field_names = List.map (fun ld -> ld.pld_name.txt) lds in
+  let variant_extractor_exp =
+    variant_record_extractor_exp variant_name field_names
+  in
+  let mapper ld =
+    let inner_type = extract_record_field ld in
+    let field_name = ld.pld_name.txt in
+    let name = Printf.sprintf "%s.%s" variant_name ld.pld_name.txt in
+    let divable_ld = ld_divable ld in
+    let divable_ct = ct_divable ld.pld_type in
+    let divable = divable_ld || divable_ct in
+    let ld_validators = ld_validators_to_apply ld inner_type.loc_type in
+    let ct_validators =
+      ct_validators_to_apply ld.pld_type inner_type.loc_type
+    in
+    let validators = ld_validators @ ct_validators in
+    match List.length validators with
+    | 0 -> None
+    | _ ->
+        inner_type.loc_type
+        |> validators_list_exp ~validators ~divable
+        |> validate_named_value_exp ~loc:ld.pld_loc name
+             (variant_extractor_exp ~loc:ld.pld_loc field_name)
+        |> Option.some
+  in
+  lds |> List.filter_map mapper
+
+let validate_constructor_declaration_exp cd =
   match cd.pcd_args with
   | Pcstr_tuple cts ->
       validate_variant_tuple_exp ~variant_name:cd.pcd_name.txt cts
-  | Pcstr_record _ ->
-      Location.raise_errorf ~loc "Record variants are not supported"
+  | Pcstr_record lds ->
+      validate_variant_record_exp ~variant_name:cd.pcd_name.txt lds
 
 let validate_variant_exp ~loc cds =
   cds
-  |> List.map (validate_constructor_declaration_exp ~loc)
+  |> List.map validate_constructor_declaration_exp
   |> List.flatten |> list_exp ~loc |> validate_keyed_exp ~loc
   |> validate_exp ~loc

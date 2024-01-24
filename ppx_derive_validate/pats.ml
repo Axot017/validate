@@ -10,3 +10,11 @@ let n_element_tuple_pat ~prefix ~loc n =
   | _ ->
       Pat.tuple
         (List.init n (fun i -> var_pat ~loc (Printf.sprintf "%s%d" prefix i)))
+
+let record_pat ~loc fields =
+  let fields =
+    List.map
+      (fun name -> ({ txt = Lident name; loc }, Pat.var { txt = name; loc }))
+      fields
+  in
+  Pat.record fields Closed

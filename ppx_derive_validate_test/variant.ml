@@ -52,6 +52,60 @@ let tuple_variant_email_error () =
           ]))
     (validate_tuple_variant v)
 
+type record_variant =
+  | ID of { id : int [@greater_than_or_equal 0] }
+  | URL of { url : (string[@url]) }
+[@@deriving validate, eq, show]
+
+let record_variant_testable =
+  Alcotest.testable pp_record_variant equal_record_variant
+
+let record_variant_id_ok () =
+  let v = ID { id = 1 } in
+  Alcotest.(
+    check (result record_variant_testable Error.validation_error_testable))
+    "Ok" (Ok v)
+    (validate_record_variant v)
+
+let record_variant_url_ok () =
+  let v = URL { url = "https://www.google.com" } in
+  Alcotest.(
+    check (result record_variant_testable Error.validation_error_testable))
+    "Ok" (Ok v)
+    (validate_record_variant v)
+
+let record_variant_id_error () =
+  let v = ID { id = -2137 } in
+  Alcotest.(
+    check (result record_variant_testable Error.validation_error_testable))
+    "Error"
+    (Error
+       (Validate.KeyedError
+          [
+            ( "ID.id",
+              [
+                Validate.BaseError
+                  {
+                    code = "value_greater_than_or_equal";
+                    params = [ ("threshold", "0") ];
+                  };
+              ] );
+          ]))
+    (validate_record_variant v)
+
+let record_variant_url_error () =
+  let v = URL { url = "invalid" } in
+  Alcotest.(
+    check (result record_variant_testable Error.validation_error_testable))
+    "Error"
+    (Error
+       (Validate.KeyedError
+          [
+            ( "URL.url",
+              [ Validate.BaseError { code = "invalid_url"; params = [] } ] );
+          ]))
+    (validate_record_variant v)
+
 let t =
   let open Alcotest in
   ( "variant",
@@ -62,4 +116,8 @@ let t =
       test_case "tuple_variant.EmailToId - Error" `Quick
         tuple_variant_email_to_id_error;
       test_case "tuple_variant.Email - Error" `Quick tuple_variant_email_error;
+      test_case "record_variant.ID - Ok" `Quick record_variant_id_ok;
+      test_case "record_variant.URL - Ok" `Quick record_variant_url_ok;
+      test_case "record_variant.ID - Error" `Quick record_variant_id_error;
+      test_case "record_variant.URL - Error" `Quick record_variant_url_error;
     ] )

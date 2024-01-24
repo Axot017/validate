@@ -66,6 +66,25 @@ let variant_tuple_extractor_exp ~loc expected_type_name total n =
   in
   Exp.(fun_ Nolabel None (Pat.var { txt = "x"; loc }) match_exp)
 
+let variant_record_extractor_exp ~loc expected_type_name field_names
+    extracted_field_name =
+  let pattern = record_pat ~loc field_names in
+  let match_exp =
+    Exp.match_
+      (simple_ident_exp ~loc "x")
+      [
+        Exp.case
+          (Pat.construct
+             { txt = Lident expected_type_name; loc }
+             (Some pattern))
+          (Exp.construct
+             { txt = Lident "Some"; loc }
+             (Some (simple_ident_exp ~loc extracted_field_name)));
+        Exp.case (Pat.any ()) (Exp.construct { txt = Lident "None"; loc } None);
+      ]
+  in
+  Exp.(fun_ Nolabel None (Pat.var { txt = "x"; loc }) match_exp)
+
 let validate_field_exp ~loc name extractor_fun_exp validators_list_exp =
   Exp.(
     apply

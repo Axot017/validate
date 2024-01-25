@@ -14,6 +14,22 @@ let map_type_declaration ~loc td =
     | _ -> Location.raise_errorf ~loc "Unsupported type"
   in
   let type_name = td.ptype_name.txt in
+  let is_recursive =
+    match td.ptype_kind with
+    | Ptype_record label_declarations ->
+        lds_has_recursive type_name label_declarations
+    | Ptype_abstract ->
+        let ct = Option.get td.ptype_manifest in
+        cts_has_recursive type_name [ ct ]
+    | Ptype_variant constructor_declarations ->
+        let recursive cd =
+          match cd.pcd_args with
+          | Pcstr_tuple cts -> cts_has_recursive type_name cts
+          | Pcstr_record lds -> lds_has_recursive type_name lds
+        in
+        constructor_declarations |> List.exists recursive
+    | _ -> false
+  in
 
   let param_pattern = Pat.var { txt = "x"; loc } in
   let param_type = Typ.constr { txt = Lident type_name; loc } [] in
@@ -23,7 +39,9 @@ let map_type_declaration ~loc td =
   let function_name = "validate_" ^ type_name in
 
   let function_pattern = Pat.var { txt = function_name; loc } in
-  Str.value Nonrecursive [ Vb.mk function_pattern func_expr ]
+  let recursive = if is_recursive then Recursive else Nonrecursive in
+  let vb = Vb.mk function_pattern func_expr in
+  Str.value recursive [ vb ]
 
 let map_sig ~loc td =
   match td.ptype_kind with

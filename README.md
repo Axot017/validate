@@ -1,8 +1,9 @@
 # Validate
 
-**Note**: This is a preview version of the `validate` library. 
-It is still under development, and users may encounter errors. 
-Feedback and contributions are highly appreciated during this stage.
+[![codecov](https://codecov.io/gh/Axot017/validate/graph/badge.svg?token=6RF8IIBDNN)](https://codecov.io/gh/Axot017/validate)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Axot017/validate/test.yml)](https://github.com/Axot017/validate/actions/workflows/test.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/Axot017/validate)](https://github.com/Axot017/validate/releases)
+[![GitHub License](https://img.shields.io/github/license/Axot017/validate)](https://github.com/Axot017/validate/blob/master/LICENSE)
 
 ## Overview
 `validate` is an OCaml library designed to streamline the process of validating records, lists, 
@@ -75,6 +76,76 @@ let example_tuple = ("example@email.com", 2)
 let validation_result = validate_tuple_type example_tuple
 ```
 Here, the validate_tuple_type function ensures the first element of the tuple is a valid email address and the second element is an integer greater than 1.
+
+#### Validating tuples
+Variants in OCaml can also be validated using `validate`. Here's an example of how to use annotations with variants:
+```ocaml
+type tuple_variant =
+  | EmailToId of (string[@email]) * (int[@greater_than_or_equal 0])
+  | Email of (string[@email])
+  | Profile of {
+    username : string [@min_length 3];
+    email : string [@email];
+  }
+[@@deriving validate]
+
+(* Example usage *)
+let email_to_id_variant = EmailToId ("example@email.com", 0)
+let validation_result = validate_tuple_variant email_to_id_variant
+```
+In this example:
+
+- `EmailToId` is a variant that takes a tuple. The first element is validated as an email, and the second as an integer greater than or equal to 0.
+- `Email` is a single-element variant validated as an email.
+- `Profile` is a record variant with `username` validated for a minimum length of 3, and `email` validated as a valid email address.
+
+#### Validating Recursive Types
+`validate` also supports recursive types, allowing for the validation of nested, self-referential data structures. Here is an example demonstrating the validation of a recursive type representing a binary tree:
+
+```ocaml
+type tree =
+  | Leaf of (int[@greater_than 0])
+  | Node of { left : tree; [@dive] right : (tree[@dive]) }
+[@@deriving validate, show, eq]
+
+(* Example usage *)
+let my_tree = Node { left = Leaf 1; right = Leaf 2 }
+let validation_result = validate_tree my_tree
+```
+In this example:
+
+- `Leaf` is a variant that takes an integer, validated to be greater than 0.
+- `Node` is a variant representing a binary tree node with `left` and `right` branches, both of which are recursively validated as `tree` instances.
+
+#### Validating Circular Recursive Types
+`validate` also handles circular recursive types, which are useful for defining structures where two types refer to each other recursively. This feature is particularly useful for complex data models. Here's an example:
+
+```ocaml
+type a = { 
+  a_id : int; [@greater_than 0] 
+  b : (b[@dive]) option 
+}
+[@@deriving validate, show, eq]
+
+and b = { 
+  b_id : int; [@greater_than 0] 
+  a : (a[@dive]) option 
+}
+[@@deriving validate, show, eq]
+
+(* Example usage *)
+let rec a_instance = { a_id = 1; b = Some { b_id = 2; a = Some a_instance } }
+let validation_result_a = validate_a a_instance
+
+let rec b_instance = { b_id = 1; a = Some { a_id = 2; b = Some b_instance } }
+let validation_result_b = validate_b b_instance
+```
+
+In this example:
+
+- Type `a` has an integer field `a_id` validated to be greater than 0, and an optional field `b` of type `b`.
+- Type `b` similarly has a `b_id` field and an optional field `a` of type `a`.
+- Both types use the `[@dive]` annotation to indicate recursive validation within their optional fields.
 
 ### Categorized Annotations
 

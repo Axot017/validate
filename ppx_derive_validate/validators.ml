@@ -207,15 +207,16 @@ let ld_validators = validators Attribute.Context.label_declaration
 let ct_dive_attribute = unit_attribute "dive" Attribute.Context.core_type
 let ct_divable ct = Attribute.get ct_dive_attribute ct |> Option.is_some
 
-let rec cts_has_recursive searched_type cts =
+let rec cts_has_recursive cts searched_type =
   let loc_types = List.map extract_loc_type cts in
   let cts_to_loc_types = List.combine cts loc_types in
   let recursive (ct, loc_type) =
     match loc_type.typ with
-    | List (_, ct) -> cts_has_recursive searched_type [ ct ]
-    | Option (_, ct) -> cts_has_recursive searched_type [ ct ]
+    | List (_, ct) -> cts_has_recursive [ ct ] searched_type
+    | Option (_, ct) -> cts_has_recursive [ ct ] searched_type
     | Tuple t ->
-        t |> List.map (fun (_, ct) -> ct) |> cts_has_recursive searched_type
+        t |> List.map (fun (_, ct) -> ct) |> fun cts ->
+        cts_has_recursive cts searched_type
     | Other type_name -> (
         match type_name with
         | Lident name ->
@@ -239,15 +240,16 @@ let ct_validators_to_apply ct loc_type =
 let ld_validators_to_apply ld loc_type =
   ld_validators |> List.filter_map (fun v -> v.build_exp ld loc_type)
 
-let lds_has_recursive searched_type lds =
+let lds_has_recursive lds searched_type =
   let loc_types = List.map extract_record_field lds in
   let lds_to_loc_types = List.combine lds loc_types in
   let recursive (ld, record_field) =
     match record_field.loc_type.typ with
-    | List (_, ct) -> cts_has_recursive searched_type [ ct ]
-    | Option (_, ct) -> cts_has_recursive searched_type [ ct ]
+    | List (_, ct) -> cts_has_recursive [ ct ] searched_type
+    | Option (_, ct) -> cts_has_recursive [ ct ] searched_type
     | Tuple t ->
-        t |> List.map (fun (_, ct) -> ct) |> cts_has_recursive searched_type
+        t |> List.map (fun (_, ct) -> ct) |> fun cts ->
+        cts_has_recursive cts searched_type
     | Other type_name -> (
         match type_name with
         | Lident name ->

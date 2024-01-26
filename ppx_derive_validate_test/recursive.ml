@@ -24,22 +24,22 @@ let test_user () =
   Alcotest.(check (result user_testable Error.validation_error_testable))
     "returns Ok" (Ok user) result
 
-(* type a = { a_id : int; [@greater_than 0] b : (b[@dive]) option } *)
-(* [@@deriving validate, show, eq] *)
-(**)
-(* and b = { b_id : int; [@greater_than 0] a : (a[@dive]) option } *)
-(* [@@deriving validate, show, eq] *)
-(**)
-(* let a_testable = Alcotest.testable pp_a equal_a *)
-(* let b_testable = Alcotest.testable pp_b equal_b *)
-(**)
-(* let test_cycle () = *)
-(*   let a = *)
-(*     { a_id = 1; b = Some { b_id = 2; a = Some { a_id = 3; b = None } } } *)
-(*   in *)
-(*   let result = validate_a a in *)
-(*   Alcotest.(check (result a_testable Error.validation_error_testable)) *)
-(*     "returns Ok" (Ok a) result *)
+type a = { a_id : int; [@greater_than 0] b : (b[@dive]) option }
+[@@deriving validate, show, eq]
+
+and b = { b_id : int; [@greater_than 0] a : (a[@dive]) option }
+[@@deriving validate, show, eq]
+
+let a_testable = Alcotest.testable pp_a equal_a
+let b_testable = Alcotest.testable pp_b equal_b
+
+let test_cycle () =
+  let a =
+    { a_id = 1; b = Some { b_id = 2; a = Some { a_id = 3; b = None } } }
+  in
+  let result = validate_a a in
+  Alcotest.(check (result a_testable Error.validation_error_testable))
+    "returns Ok" (Ok a) result
 
 let t =
   let open Alcotest in
@@ -47,5 +47,5 @@ let t =
     [
       test_case "tree" `Quick test_tree;
       test_case "user" `Quick test_user;
-      (* test_case "cycle" `Quick test_cycle; *)
+      test_case "cycle" `Quick test_cycle;
     ] )

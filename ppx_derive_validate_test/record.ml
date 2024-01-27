@@ -42,6 +42,7 @@ type test_record = {
   regex : string; [@regex "^test[a-z]+$"]
   nested_list : ((string[@max_length 1]) list[@max_length 1]) list;
       [@max_length 1]
+  ulid : string; [@ulid]
 }
 [@@deriving validate, show, eq]
 
@@ -81,6 +82,7 @@ let test_err () =
         regex = "invalid regex";
         nested_list =
           [ [ "111"; "2" ]; [ "12" ]; [ "1" ]; [ "111"; "fffff"; "123" ] ];
+        ulid = "invalid ulid";
       }
   in
   Alcotest.(check (result test_record_testable Error.validation_error_testable))
@@ -88,6 +90,8 @@ let test_err () =
     (Error
        (Validate.KeyedError
           [
+            ( "ulid",
+              [ Validate.BaseError { code = "invalid_ulid"; params = [] } ] );
             ( "nested_list",
               [
                 Validate.BaseError
@@ -399,6 +403,7 @@ let test_ok () =
       email = "example@gmail.com";
       regex = "testa";
       nested_list = [ [ "1" ] ];
+      ulid = "01E2WQZJXZJZJZJZJZJZJZJZJZ";
     }
   in
   let result = validate_test_record r in

@@ -15,6 +15,7 @@ let value_between_error_code = "value_between"
 (* Regex *)
 let invalid_pattern_error_code = "invalid_pattern"
 let invalid_uuid_error_code = "invalid_uuid"
+let invalid_ulid_error_code = "invalid_ulid"
 let invalid_numeric_error_code = "invalid_numeric"
 let invalid_alpha_error_code = "invalid_alpha"
 let invalid_alphanumeric_error_code = "invalid_alphanumeric"

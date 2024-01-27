@@ -2,9 +2,10 @@ open Err
 
 let uuid_regex =
   Re.Perl.re
-    "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+    "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
   |> Re.compile
 
+let ulid_regex = Re.Perl.re "^[0-9A-HJKMNP-TV-Z]{26}$" |> Re.compile
 let numeric_regex = Re.Perl.re "^[0-9]*$" |> Re.compile
 let alpha_regex = Re.Perl.re "^[a-zA-Z]*$" |> Re.compile
 let alphanumeric_regex = Re.Perl.re "^[a-zA-Z0-9]*$" |> Re.compile
@@ -30,6 +31,7 @@ let validate_str_regex regex =
   fun str -> validate_regex compiled_regex str
 
 let validate_uuid uuid = _validate_regex invalid_uuid_error_code uuid_regex uuid
+let validate_ulid uuid = _validate_regex invalid_ulid_error_code ulid_regex uuid
 
 let validate_numeric str =
   _validate_regex invalid_numeric_error_code numeric_regex str

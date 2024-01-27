@@ -102,6 +102,12 @@ let validators ctx =
             validate_func_exp "validate_uuid" ~loc:loc_type.loc []);
     };
     {
+      name = "ulid";
+      build_exp =
+        get_exp (unit_attribute "ulid" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_ulid" ~loc:loc_type.loc []);
+    };
+    {
       name = "email";
       build_exp =
         get_exp (unit_attribute "email" ctx) (fun (_, loc_type) ->

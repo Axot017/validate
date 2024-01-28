@@ -24,6 +24,7 @@ let invalid_uppercase_error_code = "invalid_uppercase"
 let invalid_lowercase_alphanumeric_error_code = "invalid_lowercase_alphanumeric"
 let invalid_uppercase_alphanumeric_error_code = "invalid_uppercase_alphanumeric"
 let invalid_email_error_code = "invalid_email"
+let invalid_ipv4_error_code = "invalid_ipv4"
 
 (* Custom *)
 let invalid_url_error_code = "invalid_url"

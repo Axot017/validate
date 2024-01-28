@@ -6,6 +6,12 @@ let uuid_regex =
   |> Re.compile
 
 let ulid_regex = Re.Perl.re "^[0-9A-HJKMNP-TV-Z]{26}$" |> Re.compile
+
+let ipv4_regex =
+  Re.Perl.re
+    {|^(\b25[0-5]|\b2[0-4][0-9]|\b[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$|}
+  |> Re.compile
+
 let numeric_regex = Re.Perl.re "^[0-9]*$" |> Re.compile
 let alpha_regex = Re.Perl.re "^[a-zA-Z]*$" |> Re.compile
 let alphanumeric_regex = Re.Perl.re "^[a-zA-Z0-9]*$" |> Re.compile
@@ -32,6 +38,7 @@ let validate_str_regex regex =
 
 let validate_uuid uuid = _validate_regex invalid_uuid_error_code uuid_regex uuid
 let validate_ulid uuid = _validate_regex invalid_ulid_error_code ulid_regex uuid
+let validate_ipv4 str = _validate_regex invalid_ipv4_error_code ipv4_regex str
 
 let validate_numeric str =
   _validate_regex invalid_numeric_error_code numeric_regex str

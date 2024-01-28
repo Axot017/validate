@@ -52,4 +52,29 @@ let ulid =
       test_case "Invalid ulid" `Quick test_validate_ulid_invalid;
     ] )
 
-let t = [ uuid; ulid ]
+let test_validate_ipv4 () =
+  let ipv4 = "192.168.0.1" in
+  let result = Validate.validate_ipv4 ipv4 in
+  Alcotest.(check (result unit validation_error_testable))
+    "returns Ok" (Ok ()) result
+
+let test_validate_ipv4_invalid () =
+  let ipv4 = "192.168.0.256" in
+  let result = Validate.validate_ipv4 ipv4 in
+
+  Alcotest.(check (result unit validation_error_testable))
+    "returns Error"
+    (Error
+       (Validate.BaseError
+          { code = Validate.invalid_ipv4_error_code; params = [] }))
+    result
+
+let ipv4 =
+  let open Alcotest in
+  ( "validate_ipv4",
+    [
+      test_case "Valid ipv4" `Quick test_validate_ipv4;
+      test_case "Invalid ipv4" `Quick test_validate_ipv4_invalid;
+    ] )
+
+let t = [ uuid; ulid; ipv4 ]

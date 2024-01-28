@@ -43,6 +43,7 @@ type test_record = {
   nested_list : ((string[@max_length 1]) list[@max_length 1]) list;
       [@max_length 1]
   ulid : string; [@ulid]
+  ipv4 : string; [@ipv4]
 }
 [@@deriving validate, show, eq]
 
@@ -83,6 +84,7 @@ let test_err () =
         nested_list =
           [ [ "111"; "2" ]; [ "12" ]; [ "1" ]; [ "111"; "fffff"; "123" ] ];
         ulid = "invalid ulid";
+        ipv4 = "192.168.0.256";
       }
   in
   Alcotest.(check (result test_record_testable Error.validation_error_testable))
@@ -90,6 +92,8 @@ let test_err () =
     (Error
        (Validate.KeyedError
           [
+            ( "ipv4",
+              [ Validate.BaseError { code = "invalid_ipv4"; params = [] } ] );
             ( "ulid",
               [ Validate.BaseError { code = "invalid_ulid"; params = [] } ] );
             ( "nested_list",
@@ -404,6 +408,7 @@ let test_ok () =
       regex = "testa";
       nested_list = [ [ "1" ] ];
       ulid = "01E2WQZJXZJZJZJZJZJZJZJZJZ";
+      ipv4 = "192.168.0.255";
     }
   in
   let result = validate_test_record r in

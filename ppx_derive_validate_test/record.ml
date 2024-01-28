@@ -45,6 +45,7 @@ type test_record = {
   ulid : string; [@ulid]
   ipv4 : string; [@ipv4]
   ipv6 : string; [@ipv6]
+  phone : string; [@phone]
 }
 [@@deriving validate, show, eq]
 
@@ -87,6 +88,7 @@ let test_err () =
         ulid = "invalid ulid";
         ipv4 = "invalid ipv4";
         ipv6 = "invalid ipv6";
+        phone = "invalid phone";
       }
   in
   Alcotest.(check (result test_record_testable Error.validation_error_testable))
@@ -94,6 +96,11 @@ let test_err () =
     (Error
        (Validate.KeyedError
           [
+            ( "phone",
+              [
+                Validate.BaseError
+                  { code = "invalid_phone_number"; params = [] };
+              ] );
             ( "ipv6",
               [ Validate.BaseError { code = "invalid_ipv6"; params = [] } ] );
             ( "ipv4",
@@ -414,6 +421,7 @@ let test_ok () =
       ulid = "01E2WQZJXZJZJZJZJZJZJZJZJZ";
       ipv4 = "192.168.0.255";
       ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
+      phone = "+12025550176";
     }
   in
   let result = validate_test_record r in

@@ -17,6 +17,7 @@ let ipv6_regex =
     {|^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$|}
   |> Re.compile
 
+let phone_number_regex = Re.Perl.re {|^\+[1-9]\d{1,14}$|} |> Re.compile
 let numeric_regex = Re.Perl.re "^[0-9]*$" |> Re.compile
 let alpha_regex = Re.Perl.re "^[a-zA-Z]*$" |> Re.compile
 let alphanumeric_regex = Re.Perl.re "^[a-zA-Z0-9]*$" |> Re.compile
@@ -45,6 +46,9 @@ let validate_uuid uuid = _validate_regex invalid_uuid_error_code uuid_regex uuid
 let validate_ulid uuid = _validate_regex invalid_ulid_error_code ulid_regex uuid
 let validate_ipv4 str = _validate_regex invalid_ipv4_error_code ipv4_regex str
 let validate_ipv6 str = _validate_regex invalid_ipv6_error_code ipv6_regex str
+
+let validate_phone_number str =
+  _validate_regex invalid_phone_number_error_code phone_number_regex str
 
 let validate_numeric str =
   _validate_regex invalid_numeric_error_code numeric_regex str

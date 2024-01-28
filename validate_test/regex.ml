@@ -101,4 +101,28 @@ let ipv6 =
       test_case "Invalid ipv6" `Quick test_validate_ipv6_invalid;
     ] )
 
-let t = [ uuid; ulid; ipv4; ipv6 ]
+let test_validate_phone_number () =
+  let phone_number = "+15417543010" in
+  let result = Validate.validate_phone_number phone_number in
+  Alcotest.(check (result unit validation_error_testable))
+    "returns Ok" (Ok ()) result
+
+let test_validate_phone_number_invalid () =
+  let phone_number = "+15-4175430101" in
+  let result = Validate.validate_phone_number phone_number in
+  Alcotest.(check (result unit validation_error_testable))
+    "returns Error"
+    (Error
+       (Validate.BaseError
+          { code = Validate.invalid_phone_number_error_code; params = [] }))
+    result
+
+let phone_number =
+  let open Alcotest in
+  ( "validate_phone_number",
+    [
+      test_case "Valid phone_number" `Quick test_validate_phone_number;
+      test_case "Invalid phone_number" `Quick test_validate_phone_number_invalid;
+    ] )
+
+let t = [ uuid; ulid; ipv4; ipv6; phone_number ]

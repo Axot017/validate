@@ -212,6 +212,12 @@ let validators ctx =
         get_exp (unit_attribute "ipv4" ctx) (fun (_, loc_type) ->
             validate_func_exp "validate_ipv4" ~loc:loc_type.loc []);
     };
+    {
+      name = "ipv6";
+      build_exp =
+        get_exp (unit_attribute "ipv6" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_ipv6" ~loc:loc_type.loc []);
+    };
   ]
 
 let ct_validators = validators Attribute.Context.core_type

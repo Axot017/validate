@@ -77,4 +77,28 @@ let ipv4 =
       test_case "Invalid ipv4" `Quick test_validate_ipv4_invalid;
     ] )
 
-let t = [ uuid; ulid; ipv4 ]
+let test_validate_ipv6 () =
+  let ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334" in
+  let result = Validate.validate_ipv6 ipv6 in
+  Alcotest.(check (result unit validation_error_testable))
+    "returns Ok" (Ok ()) result
+
+let test_validate_ipv6_invalid () =
+  let ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334:1" in
+  let result = Validate.validate_ipv6 ipv6 in
+  Alcotest.(check (result unit validation_error_testable))
+    "returns Error"
+    (Error
+       (Validate.BaseError
+          { code = Validate.invalid_ipv6_error_code; params = [] }))
+    result
+
+let ipv6 =
+  let open Alcotest in
+  ( "validate_ipv6",
+    [
+      test_case "Valid ipv6" `Quick test_validate_ipv6;
+      test_case "Invalid ipv6" `Quick test_validate_ipv6_invalid;
+    ] )
+
+let t = [ uuid; ulid; ipv4; ipv6 ]

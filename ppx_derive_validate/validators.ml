@@ -102,6 +102,12 @@ let validators ctx =
             validate_func_exp "validate_uuid" ~loc:loc_type.loc []);
     };
     {
+      name = "ulid";
+      build_exp =
+        get_exp (unit_attribute "ulid" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_ulid" ~loc:loc_type.loc []);
+    };
+    {
       name = "email";
       build_exp =
         get_exp (unit_attribute "email" ctx) (fun (_, loc_type) ->
@@ -199,6 +205,30 @@ let validators ctx =
         get_exp (string_attrribute "regex" ctx) (fun (x, loc_type) ->
             validate_func_exp "validate_str_regex" ~loc:loc_type.loc
               [ (Nolabel, string_exp ~loc:loc_type.loc x) ]);
+    };
+    {
+      name = "ipv4";
+      build_exp =
+        get_exp (unit_attribute "ipv4" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_ipv4" ~loc:loc_type.loc []);
+    };
+    {
+      name = "ipv6";
+      build_exp =
+        get_exp (unit_attribute "ipv6" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_ipv6" ~loc:loc_type.loc []);
+    };
+    {
+      name = "phone";
+      build_exp =
+        get_exp (unit_attribute "phone" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_phone_number" ~loc:loc_type.loc []);
+    };
+    {
+      name = "mac_address";
+      build_exp =
+        get_exp (unit_attribute "mac_address" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_mac_address" ~loc:loc_type.loc []);
     };
   ]
 

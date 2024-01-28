@@ -15,6 +15,7 @@ let value_between_error_code = "value_between"
 (* Regex *)
 let invalid_pattern_error_code = "invalid_pattern"
 let invalid_uuid_error_code = "invalid_uuid"
+let invalid_ulid_error_code = "invalid_ulid"
 let invalid_numeric_error_code = "invalid_numeric"
 let invalid_alpha_error_code = "invalid_alpha"
 let invalid_alphanumeric_error_code = "invalid_alphanumeric"
@@ -23,6 +24,10 @@ let invalid_uppercase_error_code = "invalid_uppercase"
 let invalid_lowercase_alphanumeric_error_code = "invalid_lowercase_alphanumeric"
 let invalid_uppercase_alphanumeric_error_code = "invalid_uppercase_alphanumeric"
 let invalid_email_error_code = "invalid_email"
+let invalid_ipv4_error_code = "invalid_ipv4"
+let invalid_ipv6_error_code = "invalid_ipv6"
+let invalid_phone_number_error_code = "invalid_phone_number"
+let invalid_mac_address_error_code = "invalid_mac_address"
 
 (* Custom *)
 let invalid_url_error_code = "invalid_url"

@@ -42,6 +42,11 @@ type test_record = {
   regex : string; [@regex "^test[a-z]+$"]
   nested_list : ((string[@max_length 1]) list[@max_length 1]) list;
       [@max_length 1]
+  ulid : string; [@ulid]
+  ipv4 : string; [@ipv4]
+  ipv6 : string; [@ipv6]
+  phone : string; [@phone]
+  mac_address : string; [@mac_address]
 }
 [@@deriving validate, show, eq]
 
@@ -81,6 +86,11 @@ let test_err () =
         regex = "invalid regex";
         nested_list =
           [ [ "111"; "2" ]; [ "12" ]; [ "1" ]; [ "111"; "fffff"; "123" ] ];
+        ulid = "invalid ulid";
+        ipv4 = "invalid ipv4";
+        ipv6 = "invalid ipv6";
+        phone = "invalid phone";
+        mac_address = "invalid mac address";
       }
   in
   Alcotest.(check (result test_record_testable Error.validation_error_testable))
@@ -88,6 +98,21 @@ let test_err () =
     (Error
        (Validate.KeyedError
           [
+            ( "mac_address",
+              [
+                Validate.BaseError { code = "invalid_mac_address"; params = [] };
+              ] );
+            ( "phone",
+              [
+                Validate.BaseError
+                  { code = "invalid_phone_number"; params = [] };
+              ] );
+            ( "ipv6",
+              [ Validate.BaseError { code = "invalid_ipv6"; params = [] } ] );
+            ( "ipv4",
+              [ Validate.BaseError { code = "invalid_ipv4"; params = [] } ] );
+            ( "ulid",
+              [ Validate.BaseError { code = "invalid_ulid"; params = [] } ] );
             ( "nested_list",
               [
                 Validate.BaseError
@@ -399,6 +424,11 @@ let test_ok () =
       email = "example@gmail.com";
       regex = "testa";
       nested_list = [ [ "1" ] ];
+      ulid = "01E2WQZJXZJZJZJZJZJZJZJZJZ";
+      ipv4 = "192.168.0.255";
+      ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
+      phone = "+12025550176";
+      mac_address = "01:23:45:67:89:ab";
     }
   in
   let result = validate_test_record r in

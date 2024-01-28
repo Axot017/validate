@@ -27,6 +27,7 @@ let invalid_email_error_code = "invalid_email"
 let invalid_ipv4_error_code = "invalid_ipv4"
 let invalid_ipv6_error_code = "invalid_ipv6"
 let invalid_phone_number_error_code = "invalid_phone_number"
+let invalid_mac_address_error_code = "invalid_mac_address"
 
 (* Custom *)
 let invalid_url_error_code = "invalid_url"

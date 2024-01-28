@@ -125,4 +125,28 @@ let phone_number =
       test_case "Invalid phone_number" `Quick test_validate_phone_number_invalid;
     ] )
 
-let t = [ uuid; ulid; ipv4; ipv6; phone_number ]
+let test_validate_mac_address () =
+  let mac_address = "00:00:00:00:00:00" in
+  let result = Validate.validate_mac_address mac_address in
+  Alcotest.(check (result unit validation_error_testable))
+    "returns Ok" (Ok ()) result
+
+let test_validate_mac_address_invalid () =
+  let mac_address = "00:00:00:00:00:00:00" in
+  let result = Validate.validate_mac_address mac_address in
+  Alcotest.(check (result unit validation_error_testable))
+    "returns Error"
+    (Error
+       (Validate.BaseError
+          { code = Validate.invalid_mac_address_error_code; params = [] }))
+    result
+
+let mac_address =
+  let open Alcotest in
+  ( "validate_mac_address",
+    [
+      test_case "Valid mac_address" `Quick test_validate_mac_address;
+      test_case "Invalid mac_address" `Quick test_validate_mac_address_invalid;
+    ] )
+
+let t = [ uuid; ulid; ipv4; ipv6; phone_number; mac_address ]

@@ -224,6 +224,12 @@ let validators ctx =
         get_exp (unit_attribute "phone" ctx) (fun (_, loc_type) ->
             validate_func_exp "validate_phone_number" ~loc:loc_type.loc []);
     };
+    {
+      name = "mac_address";
+      build_exp =
+        get_exp (unit_attribute "mac_address" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_mac_address" ~loc:loc_type.loc []);
+    };
   ]
 
 let ct_validators = validators Attribute.Context.core_type

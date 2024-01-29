@@ -167,7 +167,7 @@ String Annotations
 - `@lowercase_alphanumeric`: Validates a lowercase alphanumeric string.
 - `@uppercase_alphanumeric`: Validates an uppercase alphanumeric string.
 - `@email`: Checks if a string is a valid email.
-- `@regex`: Checks if string matches given regex
+- `@regex`: Checks if string matches given regex. Note: Under the hood it uses [ocaml-re](https://github.com/ocaml/ocaml-re) which does not support back-references and look-ahead/look-behind assertions. 
 
 Integer/Float Annotations
 

@@ -11,31 +11,39 @@ let process_numeric_attribute = function
 
 let number_attribute name context =
   Attribute.declare
-    Printf.(sprintf "ppx_derive_validator.%s" name)
+    Printf.(sprintf "ppx_derive_validate.%s" name)
     context
     Ast_pattern.(single_expr_payload (pexp_constant __))
     process_numeric_attribute
 
 let int_attrribute name context =
   Attribute.declare
-    Printf.(sprintf "ppx_derive_validator.%s" name)
+    Printf.(sprintf "ppx_derive_validate.%s" name)
     context
     Ast_pattern.(single_expr_payload (eint __))
     (fun x -> x)
 
 let string_attrribute name context =
   Attribute.declare
-    Printf.(sprintf "ppx_derive_validator.%s" name)
+    Printf.(sprintf "ppx_derive_validate.%s" name)
     context
     Ast_pattern.(single_expr_payload (estring __))
     (fun x -> x)
 
 let unit_attribute name context =
   Attribute.declare
-    Printf.(sprintf "ppx_derive_validator.%s" name)
+    Printf.(sprintf "ppx_derive_validate.%s" name)
     context
     Ast_pattern.(pstr nil)
     ()
+
+let function_attribute name context =
+  Attribute.declare name context
+    Ast_pattern.(pstr (pstr_eval __ nil ^:: nil))
+    (function
+      | { pexp_desc = Pexp_ident _; _ } as var_name -> `Var var_name
+      | { pexp_desc = Pexp_fun (Nolabel, None, _, _); _ } as func -> `Func func
+      | _ -> failwith "Unsupported expression type for attribute")
 
 type 'a validator_params = {
   name : string;
@@ -230,6 +238,24 @@ let validators ctx =
         get_exp (unit_attribute "mac_address" ctx) (fun (_, loc_type) ->
             validate_func_exp "validate_mac_address" ~loc:loc_type.loc []);
     };
+    {
+      name = "custom";
+      build_exp =
+        get_exp (function_attribute "custom" ctx) (fun (exp, _) ->
+            match exp with `Var var -> var | `Func func -> func);
+    };
+    {
+      name = "some";
+      build_exp =
+        get_exp (unit_attribute "some" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_some" ~loc:loc_type.loc []);
+    };
+    {
+      name = "none";
+      build_exp =
+        get_exp (unit_attribute "none" ctx) (fun (_, loc_type) ->
+            validate_func_exp "validate_none" ~loc:loc_type.loc []);
+    };
   ]
 
 let ct_validators = validators Attribute.Context.core_type
@@ -343,13 +369,15 @@ let rec validators_list_exp ~validators ~divable loc_type =
 
       let inner_validators = ct_validators_to_apply inner_ct inner_type in
       let inner_divable = ct_divable inner_ct in
-      let validators =
+      let inner_validators =
         inner_type
         |> validators_list_exp ~divable:inner_divable
              ~validators:inner_validators
         |> validate_option ~loc:loc_type.loc
       in
-      list_exp ~loc:loc_type.loc [ validators ]
+      let exp = list_exp ~loc:loc_type.loc (inner_validators :: validators) in
+
+      exp
   | _ -> validators |> list_exp ~loc:loc_type.loc
 
 let type_validator_exp (ct : core_type) =

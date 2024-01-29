@@ -11,6 +11,10 @@ let _ = Test.show
 type other_test_record = { other_min : string [@min_length 2] }
 [@@deriving validate, show, eq]
 
+let custom_validator str =
+  if String.length str > 1 then Ok ()
+  else Error (Validate.BaseError { code = "custom_validator"; params = [] })
+
 type test_record = {
   min : (string[@min_length 2]);
   max : string; [@max_length 5]
@@ -47,6 +51,16 @@ type test_record = {
   ipv6 : string; [@ipv6]
   phone : string; [@phone]
   mac_address : string; [@mac_address]
+  custom_validator : string; [@custom custom_validator]
+  custom_inline_validator : int;
+      [@custom
+        fun i ->
+          if i > 1 then Ok ()
+          else
+            Error
+              (Validate.BaseError { code = "custom_validator"; params = [] })]
+  some : string option; [@some]
+  none : string option; [@none]
 }
 [@@deriving validate, show, eq]
 
@@ -91,6 +105,10 @@ let test_err () =
         ipv6 = "invalid ipv6";
         phone = "invalid phone";
         mac_address = "invalid mac address";
+        custom_validator = "1";
+        custom_inline_validator = 1;
+        some = None;
+        none = Some "1";
       }
   in
   Alcotest.(check (result test_record_testable Error.validation_error_testable))
@@ -98,6 +116,16 @@ let test_err () =
     (Error
        (Validate.KeyedError
           [
+            ( "none",
+              [ Validate.BaseError { code = "expect_none"; params = [] } ] );
+            ( "some",
+              [ Validate.BaseError { code = "expect_some"; params = [] } ] );
+            ( "custom_inline_validator",
+              [ Validate.BaseError { code = "custom_validator"; params = [] } ]
+            );
+            ( "custom_validator",
+              [ Validate.BaseError { code = "custom_validator"; params = [] } ]
+            );
             ( "mac_address",
               [
                 Validate.BaseError { code = "invalid_mac_address"; params = [] };
@@ -429,6 +457,10 @@ let test_ok () =
       ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
       phone = "+12025550176";
       mac_address = "01:23:45:67:89:ab";
+      custom_validator = "12";
+      custom_inline_validator = 2;
+      some = Some "12";
+      none = None;
     }
   in
   let result = validate_test_record r in

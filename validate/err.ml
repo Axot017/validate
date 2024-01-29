@@ -32,6 +32,10 @@ let invalid_mac_address_error_code = "invalid_mac_address"
 (* Custom *)
 let invalid_url_error_code = "invalid_url"
 
+(* Option *)
+let expect_some_error_code = "expect_some"
+let expect_none_error_code = "expect_none"
+
 type base_validation_error = { code : string; params : (string * string) list }
 [@@deriving show, eq]
 

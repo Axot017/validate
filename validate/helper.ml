@@ -103,3 +103,6 @@ let group (validators : 'a validator list) value =
 let option (validators : 'a validator list) : 'a option validator = function
   | Some value -> group validators value
   | None -> Ok ()
+
+let ignore_if (condition : bool) (validators : 'a validator list) =
+  if condition then [] else validators

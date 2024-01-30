@@ -7,6 +7,10 @@ let float_exp f = Exp.constant (Pconst_float (string_of_float f, None))
 let string_exp ~loc s = Exp.constant (Pconst_string (s, loc, None))
 let simple_ident_exp ~loc str = Exp.ident { txt = Lident str; loc }
 
+let apply_exp f args =
+  let open Exp in
+  match args with [] -> f | _ -> apply f args
+
 let module_ident_exp ~loc m str =
   Exp.(ident { txt = Ldot (Lident m, str); loc })
 
@@ -124,3 +128,15 @@ let validate_exp ~loc arg_exp =
 
 let validate_option ~loc arg_exp =
   Exp.(apply (module_ident_exp ~loc "Validate" "option") [ (Nolabel, arg_exp) ])
+
+let ignore_if_func_exp ~loc (cond_exp : expression option) inner_exp =
+  let open Exp in
+  match cond_exp with
+  | None -> inner_exp
+  | Some cond_exp ->
+      let cond_result_exp =
+        apply cond_exp [ (Nolabel, simple_ident_exp ~loc "x") ]
+      in
+      apply
+        (module_ident_exp ~loc "Validate" "ignore_if")
+        [ (Nolabel, cond_result_exp); (Nolabel, inner_exp) ]

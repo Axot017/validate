@@ -3,6 +3,13 @@ open Exps
 open Simple_type
 
 type number = Int of int | Float of float [@@deriving show]
+type func = Var of expression | Func of expression
+
+let extract_func = function Var var -> var | Func func -> func
+
+let extract_func_option = function
+  | Some r -> Some (extract_func r)
+  | None -> None
 
 let process_numeric_attribute = function
   | Pconst_integer (i, _) -> Int (int_of_string i)
@@ -40,9 +47,10 @@ let unit_attribute name context =
 let function_attribute name context =
   Attribute.declare name context
     Ast_pattern.(pstr (pstr_eval __ nil ^:: nil))
-    (function
-      | { pexp_desc = Pexp_ident _; _ } as var_name -> `Var var_name
-      | { pexp_desc = Pexp_fun (Nolabel, None, _, _); _ } as func -> `Func func
+    (fun x ->
+      match x with
+      | { pexp_desc = Pexp_ident _; _ } -> Var x
+      | { pexp_desc = Pexp_fun (Nolabel, None, _, _); _ } -> Func x
       | _ -> failwith "Unsupported expression type for attribute")
 
 type 'a validator_params = {
@@ -242,7 +250,7 @@ let validators ctx =
       name = "custom";
       build_exp =
         get_exp (function_attribute "custom" ctx) (fun (exp, _) ->
-            match exp with `Var var -> var | `Func func -> func);
+            match exp with Var var -> var | Func func -> func);
     };
     {
       name = "some";
@@ -256,11 +264,39 @@ let validators ctx =
         get_exp (unit_attribute "none" ctx) (fun (_, loc_type) ->
             validate_func_exp "validate_none" ~loc:loc_type.loc []);
     };
+    {
+      name = "some_if";
+      build_exp =
+        get_exp (function_attribute "some_if" ctx) (fun (func, loc_type) ->
+            let exp = func |> extract_func in
+            let condition =
+              apply_exp exp
+                [ (Nolabel, simple_ident_exp ~loc:loc_type.loc "x") ]
+            in
+            validate_func_exp "validate_some_if" ~loc:loc_type.loc
+              [ (Nolabel, condition) ]);
+    };
+    {
+      name = "none_if";
+      build_exp =
+        get_exp (function_attribute "none_if" ctx) (fun (func, loc_type) ->
+            let exp = func |> extract_func in
+            let condition =
+              apply_exp exp
+                [ (Nolabel, simple_ident_exp ~loc:loc_type.loc "x") ]
+            in
+            validate_func_exp "validate_none_if" ~loc:loc_type.loc
+              [ (Nolabel, condition) ]);
+    };
   ]
 
 let ct_validators = validators Attribute.Context.core_type
 let ld_validators = validators Attribute.Context.label_declaration
 let ct_dive_attribute = unit_attribute "dive" Attribute.Context.core_type
+
+let ct_ignore_if_attribute =
+  function_attribute "ignore_if" Attribute.Context.core_type
+
 let ct_divable ct = Attribute.get ct_dive_attribute ct |> Option.is_some
 
 let rec cts_has_recursive cts searched_type =
@@ -287,6 +323,17 @@ let rec cts_has_recursive cts searched_type =
 
 let ld_dive_attribute =
   unit_attribute "dive" Attribute.Context.label_declaration
+
+let ld_ignore_if_attribute =
+  function_attribute "ignore_if" Attribute.Context.label_declaration
+
+let available_ignore_if_value ld ct =
+  let ld_ignore_if_exp = Attribute.get ld_ignore_if_attribute ld in
+  let ct_ignore_if_exp = Attribute.get ct_ignore_if_attribute ct in
+  match (ld_ignore_if_exp, ct_ignore_if_exp) with
+  | Some ld_ignore_if_exp, _ -> Some ld_ignore_if_exp
+  | _, Some ct_ignore_if_exp -> Some ct_ignore_if_exp
+  | _ -> None
 
 let ld_divable ld = Attribute.get ld_dive_attribute ld |> Option.is_some
 
@@ -320,29 +367,37 @@ let lds_has_recursive lds searched_type =
 
   lds_to_loc_types |> List.exists recursive
 
-let rec validators_list_exp ~validators ~divable loc_type =
+let rec validators_list_exp ~validators ~divable ~ignore_if_exp loc_type =
   match loc_type.typ with
   | List (t, inner_type) ->
       let inner_divable = ct_divable inner_type in
       let inner_loc_type = { loc_type with typ = t } in
       let inner_validators = ct_validators_to_apply inner_type inner_loc_type in
+      let inner_ignore_if_exp =
+        Attribute.get ct_ignore_if_attribute inner_type |> extract_func_option
+      in
       let deep_validators_exp =
         inner_loc_type
         |> validators_list_exp ~validators:inner_validators
-             ~divable:inner_divable
+             ~divable:inner_divable ~ignore_if_exp:inner_ignore_if_exp
         |> validate_list_exp ~loc:loc_type.loc
       in
       let all_validators = deep_validators_exp :: validators in
-      list_exp ~loc:loc_type.loc all_validators
-  | Other type_name -> (
-      match divable with
-      | true ->
-          list_exp ~loc:loc_type.loc
-            [
-              ignore_ok_exp ~loc:loc_type.loc
-              @@ dive_exp ~loc:loc_type.loc type_name;
-            ]
-      | false -> list_exp ~loc:loc_type.loc [])
+
+      all_validators |> list_exp ~loc:loc_type.loc
+      |> ignore_if_func_exp ~loc:loc_type.loc ignore_if_exp
+  | Other type_name ->
+      let list_exp =
+        match divable with
+        | true ->
+            list_exp ~loc:loc_type.loc
+              [
+                ignore_ok_exp ~loc:loc_type.loc
+                @@ dive_exp ~loc:loc_type.loc type_name;
+              ]
+        | false -> list_exp ~loc:loc_type.loc []
+      in
+      list_exp |> ignore_if_func_exp ~loc:loc_type.loc ignore_if_exp
   | Tuple types ->
       let args_count = List.length types in
       let tuple_extractor_exp = tuple_element_extractor_fun_exp args_count in
@@ -352,9 +407,12 @@ let rec validators_list_exp ~validators ~divable loc_type =
         let inner_type = { loc_type with typ = t } in
         let inner_validators = ct_validators_to_apply ct inner_type in
         let inner_divable = ct_divable ct in
+        let inner_ignore_if_exp =
+          Attribute.get ct_ignore_if_attribute ct |> extract_func_option
+        in
         inner_type
         |> validators_list_exp ~validators:inner_validators
-             ~divable:inner_divable
+             ~divable:inner_divable ~ignore_if_exp:inner_ignore_if_exp
         |> validate_field_exp ~loc:ct.ptyp_loc (string_of_int i)
              (tuple_extractor_exp ~loc:ct.ptyp_loc i)
       in
@@ -363,28 +421,38 @@ let rec validators_list_exp ~validators ~divable loc_type =
         |> validate_keyed_exp ~loc:loc_type.loc
       in
 
-      list_exp ~loc:loc_type.loc [ body ]
+      [ body ] |> list_exp ~loc:loc_type.loc
+      |> ignore_if_func_exp ~loc:loc_type.loc ignore_if_exp
   | Option (t, inner_ct) ->
       let inner_type = { loc_type with typ = t } in
 
       let inner_validators = ct_validators_to_apply inner_ct inner_type in
       let inner_divable = ct_divable inner_ct in
+      let inner_ignore_if_exp =
+        Attribute.get ct_ignore_if_attribute inner_ct |> extract_func_option
+      in
       let inner_validators =
         inner_type
         |> validators_list_exp ~divable:inner_divable
-             ~validators:inner_validators
+             ~validators:inner_validators ~ignore_if_exp:inner_ignore_if_exp
         |> validate_option ~loc:loc_type.loc
       in
-      let exp = list_exp ~loc:loc_type.loc (inner_validators :: validators) in
 
-      exp
-  | _ -> validators |> list_exp ~loc:loc_type.loc
+      inner_validators :: validators
+      |> list_exp ~loc:loc_type.loc
+      |> ignore_if_func_exp ~loc:loc_type.loc ignore_if_exp
+  | _ ->
+      validators |> list_exp ~loc:loc_type.loc
+      |> ignore_if_func_exp ~loc:loc_type.loc ignore_if_exp
 
 let type_validator_exp (ct : core_type) =
   let loc_type = extract_loc_type ct in
   let validators = ct_validators_to_apply ct loc_type in
   let divable = ct_divable ct in
-  validators_list_exp ~validators ~divable loc_type
+  let ignore_if_exp =
+    Attribute.get ct_ignore_if_attribute ct |> extract_func_option
+  in
+  validators_list_exp ~validators ~divable ~ignore_if_exp loc_type
   |> validate_group_exp ~loc:ct.ptyp_loc
 
 let field_validator_exp (ld : label_declaration) =
@@ -394,16 +462,23 @@ let field_validator_exp (ld : label_declaration) =
   let divable = divable_ld || divable_ct in
   let ld_validators = ld_validators_to_apply ld f.loc_type in
   let ct_validators = ct_validators_to_apply ld.pld_type f.loc_type in
+
+  let ignore_if_exp =
+    available_ignore_if_value ld ld.pld_type |> extract_func_option
+  in
   let validators = ld_validators @ ct_validators in
   f.loc_type
-  |> validators_list_exp ~validators ~divable
+  |> validators_list_exp ~validators ~divable ~ignore_if_exp
   |> validate_field_exp ~loc:ld.pld_loc f.name
        (field_extractor_exp ~loc:f.loc_type.loc f.name)
 
 let validate_record_exp ~loc label_declarations =
-  label_declarations
-  |> List.map field_validator_exp
-  |> list_exp ~loc |> validate_keyed_exp ~loc |> validate_exp ~loc
+  let exp =
+    label_declarations
+    |> List.map field_validator_exp
+    |> list_exp ~loc |> validate_keyed_exp ~loc |> validate_exp ~loc
+  in
+  exp
 
 let validate_abstract_exp ~loc ct =
   ct |> type_validator_exp |> validate_exp ~loc
@@ -420,13 +495,17 @@ let validate_variant_tuple_exp ~variant_name cts =
     let inner_divable = ct_divable ct in
 
     let inner_validators = ct_validators_to_apply ct inner_type in
+    let inner_ignore_if_exp =
+      Attribute.get ct_ignore_if_attribute ct |> extract_func_option
+    in
+
     match (List.length inner_validators, inner_divable) with
     | 0, false -> None
     | _ ->
         let name = Printf.sprintf "%s.%s" variant_name (string_of_int i) in
         inner_type
         |> validators_list_exp ~validators:inner_validators
-             ~divable:inner_divable
+             ~divable:inner_divable ~ignore_if_exp:inner_ignore_if_exp
         |> validate_named_value_exp ~loc:ct.ptyp_loc name
              (tuple_extractor_exp ~loc:ct.ptyp_loc i)
         |> Option.some
@@ -449,12 +528,15 @@ let validate_variant_record_exp ~variant_name lds =
     let ct_validators =
       ct_validators_to_apply ld.pld_type inner_type.loc_type
     in
+    let ignore_if_exp =
+      available_ignore_if_value ld ld.pld_type |> extract_func_option
+    in
     let validators = ld_validators @ ct_validators in
     match (List.length validators, divable) with
     | 0, false -> None
     | _ ->
         inner_type.loc_type
-        |> validators_list_exp ~validators ~divable
+        |> validators_list_exp ~validators ~divable ~ignore_if_exp
         |> validate_named_value_exp ~loc:ld.pld_loc name
              (variant_extractor_exp ~loc:ld.pld_loc field_name)
         |> Option.some

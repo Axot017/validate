@@ -395,6 +395,7 @@ let rec validators_list_exp ~validators ~divable ~ignore_if_exp loc_type =
                 ignore_ok_exp ~loc:loc_type.loc
                 @@ dive_exp ~loc:loc_type.loc type_name;
               ]
+            |> ignore_if_func_exp ~loc:loc_type.loc ignore_if_exp
         | false -> list_exp ~loc:loc_type.loc []
       in
       list_exp |> ignore_if_func_exp ~loc:loc_type.loc ignore_if_exp

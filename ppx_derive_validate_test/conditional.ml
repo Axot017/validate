@@ -1,21 +1,21 @@
 type cond_record = {
   unit : string;
   temperature : int;
-      [@greater_than_or_equal 0] [@ignore_if fun r -> r.unit <> "F"]
+      [@greater_than_or_equal 0] [@ignore_if fun r -> r.unit <> "K"]
 }
 [@@deriving validate, eq, show]
 
 let cond_record_testable = Alcotest.testable pp_cond_record equal_cond_record
 
-let test_cond_record_f_ok () =
-  let r = { unit = "F"; temperature = 0 } in
+let test_cond_record_k_ok () =
+  let r = { unit = "K"; temperature = 0 } in
   let result = validate_cond_record r in
 
   Alcotest.(check (result cond_record_testable Error.validation_error_testable))
     "Ok" (Ok r) result
 
-let test_cond_record_f_err () =
-  let r = { unit = "F"; temperature = -10 } in
+let test_cond_record_k_err () =
+  let r = { unit = "K"; temperature = -10 } in
   let result = validate_cond_record r in
 
   Alcotest.(check (result cond_record_testable Error.validation_error_testable))
@@ -42,20 +42,20 @@ let test_cond_record_c_ok () =
     "Ok" (Ok r) result
 
 type cond_tuple =
-  string * (int[@greater_than_or_equal 0] [@ignore_if fun (u, _) -> u <> "F"])
+  string * (int[@greater_than_or_equal 0] [@ignore_if fun (u, _) -> u <> "K"])
 [@@deriving validate, eq, show]
 
 let cond_tuple_testable = Alcotest.testable pp_cond_tuple equal_cond_tuple
 
-let test_cond_tuple_f_ok () =
-  let r = ("F", 0) in
+let test_cond_tuple_k_ok () =
+  let r = ("K", 0) in
   let result = validate_cond_tuple r in
 
   Alcotest.(check (result cond_tuple_testable Error.validation_error_testable))
     "Ok" (Ok r) result
 
-let test_cond_tuple_f_err () =
-  let r = ("F", -10) in
+let test_cond_tuple_k_err () =
+  let r = ("K", -10) in
   let result = validate_cond_tuple r in
 
   Alcotest.(check (result cond_tuple_testable Error.validation_error_testable))
@@ -90,28 +90,28 @@ type cond_variant =
       * (int
         [@greater_than_or_equal 0]
         [@ignore_if
-          fun v -> match v with Tuple (u, _) -> u <> "F" | _ -> false])
+          fun v -> match v with Tuple (u, _) -> u <> "K" | _ -> false])
   | Record of {
       unit : string;
       temperature : int;
           [@greater_than_or_equal 0]
           [@ignore_if
-            fun v -> match v with Record r -> r.unit <> "F" | _ -> false]
+            fun v -> match v with Record r -> r.unit <> "K" | _ -> false]
     }
 [@@deriving validate, eq, show]
 
 let cond_variant_testable = Alcotest.testable pp_cond_variant equal_cond_variant
 
-let test_cond_variant_tuple_f_ok () =
-  let r = Tuple ("F", 0) in
+let test_cond_variant_tuple_k_ok () =
+  let r = Tuple ("K", 0) in
   let result = validate_cond_variant r in
 
   Alcotest.(
     check (result cond_variant_testable Error.validation_error_testable))
     "Ok" (Ok r) result
 
-let test_cond_variant_tuple_f_err () =
-  let r = Tuple ("F", -10) in
+let test_cond_variant_tuple_k_err () =
+  let r = Tuple ("K", -10) in
   let result = validate_cond_variant r in
 
   Alcotest.(
@@ -139,16 +139,16 @@ let test_cond_variant_tuple_c_ok () =
     check (result cond_variant_testable Error.validation_error_testable))
     "Ok" (Ok r) result
 
-let test_cond_variant_record_f_ok () =
-  let r = Record { unit = "F"; temperature = 0 } in
+let test_cond_variant_record_k_ok () =
+  let r = Record { unit = "K"; temperature = 0 } in
   let result = validate_cond_variant r in
 
   Alcotest.(
     check (result cond_variant_testable Error.validation_error_testable))
     "Ok" (Ok r) result
 
-let test_cond_variant_record_f_err () =
-  let r = Record { unit = "F"; temperature = -10 } in
+let test_cond_variant_record_k_err () =
+  let r = Record { unit = "K"; temperature = -10 } in
   let result = validate_cond_variant r in
 
   Alcotest.(
@@ -239,22 +239,22 @@ let t =
   let open Alcotest in
   ( "conditinal",
     [
-      test_case "cond_record - F - Ok" `Quick test_cond_record_f_ok;
-      test_case "cond_record - F - Error" `Quick test_cond_record_f_err;
+      test_case "cond_record - K - Ok" `Quick test_cond_record_k_ok;
+      test_case "cond_record - K - Error" `Quick test_cond_record_k_err;
       test_case "cond_record - C - Ok" `Quick test_cond_record_c_ok;
-      test_case "cond_tuple - F - Ok" `Quick test_cond_tuple_f_ok;
-      test_case "cond_tuple - F - Error" `Quick test_cond_tuple_f_err;
+      test_case "cond_tuple - K - Ok" `Quick test_cond_tuple_k_ok;
+      test_case "cond_tuple - K - Error" `Quick test_cond_tuple_k_err;
       test_case "cond_tuple - C - Ok" `Quick test_cond_tuple_c_ok;
-      test_case "cond_variant - Tuple - F - Ok" `Quick
-        test_cond_variant_tuple_f_ok;
-      test_case "cond_variant - Tuple - F - Error" `Quick
-        test_cond_variant_tuple_f_err;
+      test_case "cond_variant - Tuple - K - Ok" `Quick
+        test_cond_variant_tuple_k_ok;
+      test_case "cond_variant - Tuple - K - Error" `Quick
+        test_cond_variant_tuple_k_err;
       test_case "cond_variant - Tuple - C - Ok" `Quick
         test_cond_variant_tuple_c_ok;
-      test_case "cond_variant - Record - F - Ok" `Quick
-        test_cond_variant_record_f_ok;
-      test_case "cond_variant - Record - F - Error" `Quick
-        test_cond_variant_record_f_err;
+      test_case "cond_variant - Record - K - Ok" `Quick
+        test_cond_variant_record_k_ok;
+      test_case "cond_variant - Record - K - Error" `Quick
+        test_cond_variant_record_k_err;
       test_case "cond_variant - Record - C - Ok" `Quick
         test_cond_variant_record_c_ok;
       test_case "username_or_email - username - Ok" `Quick

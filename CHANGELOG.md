@@ -1,3 +1,18 @@
+## v1.1.0 (2024-02-01)
+
+- Added new string annotations: 
+  - `@ulid`: Ensures a string is a valid ULID.
+  - `@ipv4`: Validates that a string is a valid IPv4 address.
+  - `@ipv6`: Ensures a string is a valid IPv6 address.
+  - `@phone`: Validates that a string conforms to the E.164 phone number format.
+  - `@mac_address`: Ensures a string is a valid MAC address.
+- Introduced new option type annotations: 
+  - `@some`: Ensures an option type is `Some`.
+  - `@none`: Ensures an option type is `None`.
+- Implemented `@custom` annotation for custom validation logic.
+- Added `@ignore_if` annotation for conditional validation.
+- Introduced `@some_if` and `@none_if` annotations for conditional requirements on option types.
+
 ## v1.0.0 (2024-01-26)
 
 - Added support for validating variants.

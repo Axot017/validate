@@ -10,9 +10,9 @@
 or values. It primarily operates through a PPX deriver that automatically generates 
 validators using annotations, utilizing an underlying library of helper validation functions.
 
-## Overview
+## Prerequisites
 
-- OCaml varsion 5.0 or higher.
+- OCaml version 5.0 or higher.
 
 ## Installation
 
@@ -168,6 +168,12 @@ String Annotations
 - `@uppercase_alphanumeric`: Validates an uppercase alphanumeric string.
 - `@email`: Checks if a string is a valid email.
 - `@regex`: Checks if string matches given regex. Note: Under the hood it uses [ocaml-re](https://github.com/ocaml/ocaml-re) which does not support back-references and look-ahead/look-behind assertions. 
+- `@ulid`: Ensures a string is a valid Universally Unique Lexicographically Sortable Identifier (ULID).
+- `@ipv4`: Validates that a string is a valid IPv4 address.
+- `@ipv6`: Ensures a string is a valid IPv6 address.
+- `@phone`: Validates that a string conforms to the E.164 international phone number format.
+- `@mac_address`: Ensures a string is a valid MAC address.
+
 
 Integer/Float Annotations
 
@@ -182,6 +188,53 @@ Integer/Float Annotations
 Annotations for Other Types
 
 - `@dive`: Used for nested record validation, allowing validation of each element within a composite structure like records or lists.
+
+Option Type Annotations
+
+- `@some`: Ensures that an option type is Some, indicating a value is present.
+- `@none`: Ensures that an option type is None, indicating no value is present.
+
+Advanced Annotations
+
+- `@custom`: This annotation allows you to define custom validation logic. You provide a function that takes one argument and returns a result, which is either `Ok ()` for successful validation or `Error validation_error` for a validation failure.
+
+```ocaml
+let custom_validator str =
+  if String.length str > 1 then Ok ()
+  else Error (Validate.BaseError { code = "custom_validator"; params = [] })
+
+type custom_validator_record = {
+  custom_validator : string; [@custom custom_validator]
+  custom_inline_validator : int;
+      [@custom
+        fun i ->
+          if i > 1 then Ok ()
+          else
+            Error
+              (Validate.BaseError { code = "custom_validator"; params = [] })]
+}
+[@@deriving validate]
+```
+
+- `@ignore_if`: This annotation accepts a function that takes the type itself as an argument and returns a boolean. If the function returns true, other validators for the field are ignored.
+
+```ocaml
+type cond_record = {
+  unit : string;
+  temperature : int; [@greater_than_or_equal 0] [@ignore_if fun r -> r.unit <> "K"]
+}
+[@@deriving validate]
+```
+
+- `@some_if` and `@none_if`: These annotations are applicable only to option types. `@some_if` requires the option to be `Some` if the provided function returns true, and `@none_if` requires it to be `None` under the specified condition.
+
+```ocaml
+type username_or_email = {
+  username : string option; [@some_if fun r -> r.email = None]
+  email : string option; [@none_if fun r -> Option.is_some r.username]
+}
+[@@deriving validate]
+```
 
 ## Error Handling
 

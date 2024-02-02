@@ -77,7 +77,7 @@ let validation_result = validate_tuple_type example_tuple
 ```
 Here, the validate_tuple_type function ensures the first element of the tuple is a valid email address and the second element is an integer greater than 1.
 
-#### Validating tuples
+#### Validating variants
 Variants in OCaml can also be validated using `validate`. Here's an example of how to use annotations with variants:
 ```ocaml
 type tuple_variant =
